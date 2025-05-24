@@ -1,31 +1,143 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Document Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        #chatbox { height: 400px; border: 1px solid #ddd; padding: 10px; overflow-y: auto; margin-bottom: 10px; }
-        .message { margin: 5px; padding: 8px; border-radius: 5px; }
-        .user { background: #e3f2fd; margin-left: 20%; }
-        .bot { background: #f5f5f5; margin-right: 20%; }
-        #upload-area { border: 2px dashed #ccc; padding: 20px; text-align: center; margin: 10px 0; }
-        #question-input { width: 70%; padding: 8px; }
-        #ask-btn { padding: 8px 15px; }
-        .disabled { opacity: 0.5; pointer-events: none; }
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: linear-gradient(135deg, #c3ecff, #f6f6ff);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 20px;
+            color: #222;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+        #upload-area {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px dashed #aaa;
+            border-radius: 15px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            transition: border-color 0.3s ease;
+        }
+        #upload-area:hover {
+            border-color: #007bff;
+        }
+        #file-input {
+            padding: 10px;
+            font-size: 1em;
+        }
+        #status {
+            margin-top: 15px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        #chatbox {
+            background: rgba(255,255,255,0.8);
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            overflow-y: auto;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-radius: 20px;
+            line-height: 1.5;
+            font-size: 1em;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .user {
+            background: #d0f0ff;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot {
+            background: #fff;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+
+        #question-input {
+            padding: 12px;
+            width: 65%;
+            border: none;
+            border-radius: 10px;
+            outline: none;
+            font-size: 1em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #ask-btn {
+            padding: 12px 18px;
+            margin-left: 10px;
+            font-size: 1em;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,123,255,0.4);
+            transition: background 0.3s ease;
+        }
+
+        #ask-btn:hover {
+            background: #0056b3;
+        }
+
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
-    <h1>Document Chatbot</h1>
-    
+
+    <h1>📄 Let's Chat docs</h1>
+
     <div id="upload-area">
         <input type="file" id="file-input" accept=".pdf,.docx,.txt">
-        <p id="status">Upload a document (PDF, DOCX, or TXT)</p>
+        <p id="status">Upload a document to start chatting with it</p>
     </div>
-    
+
     <div id="chatbox"></div>
-    
-    <input type="text" id="question-input" placeholder="Ask about your document..." disabled>
-    <button id="ask-btn" disabled>Ask</button>
+
+    <div style="display: flex; justify-content: center; width: 100%; max-width: 600px;">
+        <input type="text" id="question-input" placeholder="Ask something about the document..." disabled>
+        <button id="ask-btn" disabled>Ask</button>
+    </div>
 
     <script>
         const fileInput = document.getElementById('file-input');
@@ -33,9 +145,9 @@
         const chatbox = document.getElementById('chatbox');
         const questionInput = document.getElementById('question-input');
         const askBtn = document.getElementById('ask-btn');
-        
+
         let currentFile = null;
-        
+
         function addMessage(text, sender) {
             const msg = document.createElement('div');
             msg.className = `message ${sender}`;
@@ -43,55 +155,55 @@
             chatbox.appendChild(msg);
             chatbox.scrollTop = chatbox.scrollHeight;
         }
-        
+
         // File upload handler
         fileInput.addEventListener('change', async () => {
             if (!fileInput.files.length) return;
-            
+
             const file = fileInput.files[0];
             const formData = new FormData();
             formData.append('file', file);
-            
+
             try {
                 status.textContent = 'Uploading...';
                 const response = await fetch('/upload', {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     currentFile = file.name;
-                    status.textContent = `Ready: ${file.name}`;
+                    status.textContent = `✅ ${file.name} uploaded successfully!`;
                     questionInput.disabled = false;
                     askBtn.disabled = false;
-                    addMessage(`Document "${file.name}" loaded successfully. Ask me anything about it!`, 'bot');
+                    addMessage(`Great! "${file.name}" is ready. What would you like to know?`, 'bot');
                 } else {
-                    status.textContent = `Error: ${result.error || 'Upload failed'}`;
+                    status.textContent = `❌ Error: ${result.error || 'Upload failed'}`;
                 }
             } catch (error) {
-                status.textContent = `Error: ${error.message}`;
+                status.textContent = `❌ Error: ${error.message}`;
             }
         });
-        
+
         // Question handler
         async function askQuestion() {
             const question = questionInput.value.trim();
             if (!question || !currentFile) return;
-            
+
             addMessage(question, 'user');
             questionInput.value = '';
-            
+
             try {
                 const response = await fetch('/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     addMessage(result.answer, 'bot');
                 } else {
@@ -101,12 +213,12 @@
                 addMessage(`Error: ${error.message}`, 'bot');
             }
         }
-        
-        // Setup question submission
+
         askBtn.addEventListener('click', askQuestion);
         questionInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') askQuestion();
         });
     </script>
+
 </body>
 </html>
