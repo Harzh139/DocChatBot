@@ -23,6 +23,8 @@ llm = pipeline("text2text-generation", model="google/flan-t5-base")
 index = None
 document_chunks = []
 
+# ------------------------ Utility Functions ------------------------
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
@@ -49,11 +51,12 @@ def preprocess_text(text):
 
 def chunk_text(text):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100,
+        chunk_size=1000,      # larger chunk for better coherence
+        chunk_overlap=200,    # overlap helps LLM keep context
         length_function=len
     )
     return text_splitter.split_text(text)
+
 
 def create_index(text_chunks):
     global index, document_chunks
@@ -64,12 +67,48 @@ def create_index(text_chunks):
     index = faiss.IndexFlatL2(dimension)
     index.add(embeddings)
 
+def get_relevant_context(question, top_k=5):
+    question_lower = question.lower()
+    question_embedding = embedder.embed_query(question)
+    D, I = index.search(np.array([question_embedding]).astype('float32'), k=top_k)
+    matched_chunks = [document_chunks[i] for i in I[0]]
+
+    # Step 1: Keyword Boosting
+    keywords = set(question_lower.split())
+    priority_chunks = []
+
+    # Boost chunks that contain keywords, accuracy info, or known model names
+    for chunk in matched_chunks:
+        chunk_lower = chunk.lower()
+        if any(word in chunk_lower for word in keywords) or \
+           "inception-resnet" in chunk_lower or \
+           "%" in chunk_lower or \
+           "accuracy" in chunk_lower:
+            priority_chunks.append(chunk)
+
+    # Step 2: Return top filtered or fallback to matched
+    selected_chunks = priority_chunks if priority_chunks else matched_chunks
+
+    # Deduplicate chunks
+    seen = set()
+    unique_chunks = []
+    for chunk in selected_chunks:
+        if chunk not in seen:
+            unique_chunks.append(chunk)
+            seen.add(chunk)
+
+    return "\n---\n".join(unique_chunks)
+
+
 def generate_rag_response(question, context):
-    prompt = f"""Answer this question based on the context:
+    prompt = f"""You are a helpful assistant. Use the context below to answer the question.
+If the question is about a section like 'Introduction' or 'Conclusion', find and summarize that section from the context if possible.
 
-Context: {context}
+
+Context:
+{context}
+
 Question: {question}
-
 Answer:"""
     try:
         response = llm(
@@ -83,6 +122,8 @@ Answer:"""
         print(f"LLM Error: {str(e)}")
         return "I encountered an error processing your question."
 
+# ------------------------ Flask Routes ------------------------
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -91,34 +132,34 @@ def home():
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-        
+
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
-        
+
     if not allowed_file(file.filename):
         return jsonify({'error': 'Invalid file type'}), 400
 
     try:
         filename = secure_filename(file.filename)
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)  # Ensure uploads dir exists
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
-        
+
         text = extract_text_from_file(file_path)
         if not text.strip():
             return jsonify({'error': 'File is empty or could not be read'}), 400
-            
+
         preprocessed = preprocess_text(text)
         chunks = chunk_text(preprocessed)
         create_index(chunks)
-        
+
         return jsonify({
             'message': 'File uploaded successfully',
             'filename': filename,
             'chunk_count': len(chunks)
         })
-        
+
     except Exception as e:
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
@@ -126,24 +167,41 @@ def upload_file():
 def ask_question():
     if index is None:
         return jsonify({'error': 'No document uploaded yet'}), 400
+
     question = request.json.get('question', '').strip()
     if not question:
         return jsonify({'error': 'No question provided'}), 400
+
     try:
-        question_embedding = embedder.embed_query(question)
-        D, I = index.search(np.array([question_embedding]).astype('float32'), k=3)
-        context = "\n---\n".join([document_chunks[i] for i in I[0]])
+        context = get_relevant_context(question)
         answer = generate_rag_response(question, context)
         return jsonify({
             'question': question,
             'answer': answer,
-            'relevant_chunks': I[0].tolist(),
-            'scores': D[0].tolist()
+            'context_used': context
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/summary', methods=['GET'])
+def summarize():
+    if not document_chunks:
+        return jsonify({'error': 'No document uploaded'}), 400
+
+    try:
+        context = "\n".join(document_chunks[:5])  # Take first few chunks
+        prompt = f"Summarize the following research paper content:\n{context}"
+        summary = llm(prompt, max_length=250, do_sample=False, temperature=0.3)[0]['generated_text']
+        return jsonify({'summary': summary})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+# ------------------------ Run App ------------------------
 
 if __name__ == '__main__':
+    print("Starting app...")
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(host='0.0.0.0', port=7860)
-
+    port = int(os.environ.get("PORT", 7860))
+    app.run(debug=True, host='0.0.0.0', port=port)
