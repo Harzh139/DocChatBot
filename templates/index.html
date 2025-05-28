@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Document Chatbot</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             box-sizing: border-box;
@@ -13,6 +14,7 @@
         }
         body {
             background: linear-gradient(135deg, #c3ecff, #f6f6ff);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -34,19 +36,39 @@
             text-align: center;
             margin-bottom: 25px;
             backdrop-filter: blur(10px);
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
         }
         #upload-area:hover {
             border-color: #007bff;
+            transform: translateY(-2px);
+        }
+        #upload-area.highlight {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.05);
         }
         #file-input {
-            padding: 10px;
-            font-size: 1em;
+            display: none;
+        }
+        .upload-btn {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,123,255,0.3);
+        }
+        .upload-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
         }
         #status {
             margin-top: 15px;
             font-weight: 500;
             color: #333;
+            min-height: 24px;
         }
 
         #chatbox {
@@ -56,18 +78,18 @@
             height: 400px;
             overflow-y: auto;
             border-radius: 15px;
-            padding: 15px;
+            padding: 20px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
             backdrop-filter: blur(10px);
         }
 
         .message {
-            max-width: 80%;
+            max-width: 85%;
             padding: 12px 16px;
             margin: 10px 0;
-            border-radius: 20px;
-            line-height: 1.5;
+            border-radius: 12px;
+            line-height: 1.6;
             font-size: 1em;
             word-wrap: break-word;
             animation: fadeIn 0.3s ease-in-out;
@@ -77,43 +99,92 @@
             background: #d0f0ff;
             margin-left: auto;
             border-bottom-right-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         .bot {
             background: #fff;
             margin-right: auto;
             border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .bot ul, .bot ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+        .bot li {
+            margin-bottom: 6px;
+        }
+        .typing-indicator {
+            display: inline-flex;
+            padding: 8px 16px;
+            background: #f1f1f1;
+            border-radius: 18px;
+            margin: 5px 0;
+            align-items: center;
+        }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #666;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
         }
 
+        #input-area {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            max-width: 600px;
+            gap: 10px;
+        }
         #question-input {
-            padding: 12px;
-            width: 65%;
+            padding: 12px 16px;
+            flex: 1;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             outline: none;
             font-size: 1em;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
-
+        #question-input:focus {
+            box-shadow: 0 2px 12px rgba(0,123,255,0.2);
+        }
         #ask-btn {
-            padding: 12px 18px;
-            margin-left: 10px;
+            padding: 12px 20px;
             font-size: 1em;
             background: #007bff;
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             box-shadow: 0 2px 10px rgba(0,123,255,0.4);
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-
         #ask-btn:hover {
             background: #0056b3;
+            transform: translateY(-2px);
+        }
+        #ask-btn:active {
+            transform: translateY(0);
+        }
+        #ask-btn i {
+            font-size: 0.9em;
         }
 
         .disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             pointer-events: none;
         }
 
@@ -121,51 +192,147 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
     </style>
 </head>
 <body>
 
-    <h1>📄 Let's Chat docs</h1>
+    <h1>📄 Document Insight Bot</h1>
 
     <div id="upload-area">
+        <label for="file-input" class="upload-btn">
+            <i class="fas fa-upload"></i> Choose Document
+        </label>
+        <p id="status">Supports PDF, DOCX, TXT files</p>
         <input type="file" id="file-input" accept=".pdf,.docx,.txt">
-        <p id="status">Upload a document to start chatting with it</p>
     </div>
 
     <div id="chatbox"></div>
 
-    <div style="display: flex; justify-content: center; width: 100%; max-width: 600px;">
+    <div id="input-area">
         <input type="text" id="question-input" placeholder="Ask something about the document..." disabled>
-        <button id="ask-btn" disabled>Ask</button>
+        <button id="ask-btn" disabled>
+            <i class="fas fa-paper-plane"></i> Ask
+        </button>
     </div>
 
     <script>
         const fileInput = document.getElementById('file-input');
+        const uploadArea = document.getElementById('upload-area');
         const status = document.getElementById('status');
         const chatbox = document.getElementById('chatbox');
         const questionInput = document.getElementById('question-input');
         const askBtn = document.getElementById('ask-btn');
 
         let currentFile = null;
+        let isBotTyping = false;
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('highlight');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('highlight');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('highlight');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileUpload();
+            }
+        });
+
+        // Improved typing effect with bullet point support
+        function typeResponse(element, text, delay = 20) {
+            let i = 0;
+            let isInBullet = false;
+            
+            function type() {
+                if (i < text.length) {
+                    // Handle bullet points and line breaks
+                    if (text[i] === '\n' && !isInBullet) {
+                        element.innerHTML += '<br>';
+                        i++;
+                    } 
+                    // Special handling for bullet emojis
+                    else if (text.substr(i, 2) === '🔹' || 
+                             text.substr(i, 2) === '✅' || 
+                             text.substr(i, 2) === '📌') {
+                        element.innerHTML += text.substr(i, 2) + ' ';
+                        i += 2;
+                    }
+                    else {
+                        element.innerHTML += text[i];
+                        i++;
+                    }
+                    setTimeout(type, delay);
+                }
+            }
+            type();
+        }
+
+        function createTypingIndicator() {
+            const typing = document.createElement('div');
+            typing.className = 'typing-indicator';
+            typing.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            chatbox.appendChild(typing);
+            chatbox.scrollTop = chatbox.scrollHeight;
+            return typing;
+        }
 
         function addMessage(text, sender) {
             const msg = document.createElement('div');
             msg.className = `message ${sender}`;
-            msg.textContent = text;
             chatbox.appendChild(msg);
-            chatbox.scrollTop = chatbox.scrollHeight;
+
+            if (sender === 'bot') {
+                // Show typing indicator first
+                isBotTyping = true;
+                const typingIndicator = createTypingIndicator();
+                
+                // After a small delay, start typing the response
+                setTimeout(() => {
+                    chatbox.removeChild(typingIndicator);
+                    isBotTyping = false;
+                    typeResponse(msg, text);
+                    chatbox.scrollTop = chatbox.scrollHeight;
+                }, 500); // Short delay before typing starts
+            } else {
+                msg.textContent = text;
+                chatbox.scrollTop = chatbox.scrollHeight;
+            }
         }
 
-        // File upload handler
-        fileInput.addEventListener('change', async () => {
+        fileInput.addEventListener('change', handleFileUpload);
+
+        async function handleFileUpload() {
             if (!fileInput.files.length) return;
 
             const file = fileInput.files[0];
+            if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(file.type)) {
+                status.textContent = '❌ Invalid file type. Please upload PDF, DOCX, or TXT.';
+                return;
+            }
+
             const formData = new FormData();
             formData.append('file', file);
 
             try {
-                status.textContent = 'Uploading...';
+                status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+                askBtn.disabled = true;
+                questionInput.disabled = true;
+
                 const response = await fetch('/upload', {
                     method: 'POST',
                     body: formData
@@ -175,25 +342,27 @@
 
                 if (response.ok) {
                     currentFile = file.name;
-                    status.textContent = `✅ ${file.name} uploaded successfully!`;
+                    status.innerHTML = `<i class="fas fa-check-circle"></i> <strong>${file.name}</strong> ready for questions!`;
                     questionInput.disabled = false;
                     askBtn.disabled = false;
-                    addMessage(`Great! "${file.name}" is ready. What would you like to know?`, 'bot');
+                    questionInput.focus();
+                    addMessage(`Document "${file.name}" is loaded. Ask me anything about it!`, 'bot');
                 } else {
-                    status.textContent = `❌ Error: ${result.error || 'Upload failed'}`;
+                    status.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.error || 'Upload failed'}`;
                 }
             } catch (error) {
-                status.textContent = `❌ Error: ${error.message}`;
+                status.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${error.message}`;
             }
-        });
+        }
 
-        // Question handler
         async function askQuestion() {
             const question = questionInput.value.trim();
             if (!question || !currentFile) return;
 
             addMessage(question, 'user');
             questionInput.value = '';
+            askBtn.disabled = true;
+            questionInput.disabled = true;
 
             try {
                 const response = await fetch('/ask', {
@@ -211,12 +380,16 @@
                 }
             } catch (error) {
                 addMessage(`Error: ${error.message}`, 'bot');
+            } finally {
+                askBtn.disabled = false;
+                questionInput.disabled = false;
+                questionInput.focus();
             }
         }
 
         askBtn.addEventListener('click', askQuestion);
         questionInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') askQuestion();
+            if (e.key === 'Enter' && !askBtn.disabled) askQuestion();
         });
     </script>
 
