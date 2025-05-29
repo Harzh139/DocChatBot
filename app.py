@@ -69,8 +69,8 @@ def preprocess_text(text):
 def chunk_text(text):
     """Smart chunking with overlap for better context"""
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,  # Smaller chunks for precision
-        chunk_overlap=150,
+        chunk_size=1000,  # Adjusted for larger documents
+        chunk_overlap=200,
         separators=["\n\n", "\n", ". ", " ", ""]  # Better semantic splitting
     )
     return text_splitter.split_text(text)
@@ -90,7 +90,7 @@ def create_index(text_chunks):
     
     index.add(document_embeddings_np)  # Add the normalized embeddings
 
-def get_relevant_context(question, top_k=3):
+def get_relevant_context(question, top_k=5):
     """Enhanced context retrieval with keyword boosting"""
     start_time = time()
     
@@ -145,29 +145,29 @@ def format_response(text):
     
     return "\n".join(formatted)
 
-def generate_rag_response(question, context, max_length=1000):
+def generate_rag_response(question, context, max_length=2000):  # Increased max_length
     """Optimized RAG response generation"""
     start_time = time()
     
     # Truncate context intelligently
     context = context[:max_length]
     
-    prompt = f"""Answer concisely in bullet points with emojis. Use only this context:
+    prompt = f"""Provide a detailed answer in bullet points with emojis. Use only this context:
     
 Context:
 {context}
 
 Question: {question}
 
-Answer (3-5 bullet points max):"""
+Answer (5-7 bullet points max):"""  # Increased bullet points for more detail
     
     try:
         response = llm(
             prompt,
-            max_new_tokens=200,
+            max_new_tokens=300,  # Increased token limit for more comprehensive answers
             temperature=0.3,  # Less randomness
             do_sample=False,
-            num_beams=3  # Faster than default
+            num_beams=5  # Increased beams for better quality
         )[0]['generated_text']
         
         print(f"LLM generation took {time() - start_time:.2f}s")
@@ -175,6 +175,7 @@ Answer (3-5 bullet points max):"""
     except Exception as e:
         print(f"Generation error: {str(e)}")
         return "⚠️ Error generating response"
+
 
 # ------------------------ Flask Routes ------------------------
 @app.route('/')

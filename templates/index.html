@@ -220,178 +220,189 @@
     </div>
 
     <script>
-        const fileInput = document.getElementById('file-input');
-        const uploadArea = document.getElementById('upload-area');
-        const status = document.getElementById('status');
-        const chatbox = document.getElementById('chatbox');
-        const questionInput = document.getElementById('question-input');
-        const askBtn = document.getElementById('ask-btn');
+    const fileInput = document.getElementById('file-input');
+    const uploadArea = document.getElementById('upload-area');
+    const status = document.getElementById('status');
+    const chatbox = document.getElementById('chatbox');
+    const questionInput = document.getElementById('question-input');
+    const askBtn = document.getElementById('ask-btn');
 
-        let currentFile = null;
-        let isBotTyping = false;
+    let currentFile = null;
+    let isBotTyping = false;
 
-        // Drag and drop functionality
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('highlight');
-        });
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('highlight');
+    });
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('highlight');
-        });
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('highlight');
+    });
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('highlight');
-            if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                handleFileUpload();
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('highlight');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileUpload();
+        }
+    });
+
+    // Improved typing effect with bullet point support
+    function typeResponse(element, text, delay = 20) {
+        let i = 0;
+        let isInBullet = false;
+        
+        function type() {
+            if (i < text.length) {
+                // Handle bullet points and line breaks
+                if (text[i] === '\n' && !isInBullet) {
+                    element.innerHTML += '<br>';
+                    i++;
+                } 
+                // Special handling for bullet emojis
+                else if (text.substr(i, 2) === '🔹' || 
+                         text.substr(i, 2) === '✅' || 
+                         text.substr(i, 2) === '📌') {
+                    element.innerHTML += text.substr(i, 2) + ' ';
+                    i += 2;
+                }
+                else {
+                    element.innerHTML += text[i];
+                    i++;
+                }
+                setTimeout(type, delay);
             }
-        });
+        }
+        type();
+    }
 
-        // Improved typing effect with bullet point support
-        function typeResponse(element, text, delay = 20) {
-            let i = 0;
-            let isInBullet = false;
+    function createTypingIndicator() {
+        const typing = document.createElement('div');
+        typing.className = 'typing-indicator';
+        typing.innerHTML = `
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        `;
+        chatbox.appendChild(typing);
+        chatbox.scrollTop = chatbox.scrollHeight;
+        return typing;
+    }
+
+    function addMessage(text, sender) {
+        const msg = document.createElement('div');
+        msg.className = `message ${sender}`;
+        chatbox.appendChild(msg);
+
+        if (sender === 'bot') {
+            // Show typing indicator first
+            isBotTyping = true;
+            const typingIndicator = createTypingIndicator();
             
-            function type() {
-                if (i < text.length) {
-                    // Handle bullet points and line breaks
-                    if (text[i] === '\n' && !isInBullet) {
-                        element.innerHTML += '<br>';
-                        i++;
-                    } 
-                    // Special handling for bullet emojis
-                    else if (text.substr(i, 2) === '🔹' || 
-                             text.substr(i, 2) === '✅' || 
-                             text.substr(i, 2) === '📌') {
-                        element.innerHTML += text.substr(i, 2) + ' ';
-                        i += 2;
-                    }
-                    else {
-                        element.innerHTML += text[i];
-                        i++;
-                    }
-                    setTimeout(type, delay);
-                }
-            }
-            type();
-        }
-
-        function createTypingIndicator() {
-            const typing = document.createElement('div');
-            typing.className = 'typing-indicator';
-            typing.innerHTML = `
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-            `;
-            chatbox.appendChild(typing);
-            chatbox.scrollTop = chatbox.scrollHeight;
-            return typing;
-        }
-
-        function addMessage(text, sender) {
-            const msg = document.createElement('div');
-            msg.className = `message ${sender}`;
-            chatbox.appendChild(msg);
-
-            if (sender === 'bot') {
-                // Show typing indicator first
-                isBotTyping = true;
-                const typingIndicator = createTypingIndicator();
-                
-                // After a small delay, start typing the response
-                setTimeout(() => {
-                    chatbox.removeChild(typingIndicator);
-                    isBotTyping = false;
-                    typeResponse(msg, text);
-                    chatbox.scrollTop = chatbox.scrollHeight;
-                }, 500); // Short delay before typing starts
-            } else {
-                msg.textContent = text;
+            // After a small delay, start typing the response
+            setTimeout(() => {
+                chatbox.removeChild(typingIndicator);
+                isBotTyping = false;
+                typeResponse(msg, text);
                 chatbox.scrollTop = chatbox.scrollHeight;
-            }
+            }, 500); // Short delay before typing starts
+        } else {
+            msg.textContent = text;
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    }
+
+    fileInput.addEventListener('change', handleFileUpload);
+
+    async function handleFileUpload() {
+        if (!fileInput.files.length) return;
+
+        const file = fileInput.files[0];
+        if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(file.type)) {
+            status.textContent = '❌ Invalid file type. Please upload PDF, DOCX, or TXT.';
+            return;
         }
 
-        fileInput.addEventListener('change', handleFileUpload);
+        const formData = new FormData();
+        formData.append('file', file);
 
-        async function handleFileUpload() {
-            if (!fileInput.files.length) return;
-
-            const file = fileInput.files[0];
-            if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(file.type)) {
-                status.textContent = '❌ Invalid file type. Please upload PDF, DOCX, or TXT.';
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-                askBtn.disabled = true;
-                questionInput.disabled = true;
-
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    currentFile = file.name;
-                    status.innerHTML = `<i class="fas fa-check-circle"></i> <strong>${file.name}</strong> ready for questions!`;
-                    questionInput.disabled = false;
-                    askBtn.disabled = false;
-                    questionInput.focus();
-                    addMessage(`Document "${file.name}" is loaded. Ask me anything about it!`, 'bot');
-                } else {
-                    status.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.error || 'Upload failed'}`;
-                }
-            } catch (error) {
-                status.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${error.message}`;
-            }
-        }
-
-        async function askQuestion() {
-            const question = questionInput.value.trim();
-            if (!question || !currentFile) return;
-
-            addMessage(question, 'user');
-            questionInput.value = '';
+        try {
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
             askBtn.disabled = true;
             questionInput.disabled = true;
 
-            try {
-                const response = await fetch('/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question })
-                });
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
 
-                const result = await response.json();
+            const result = await response.json();
 
-                if (response.ok) {
-                    addMessage(result.answer, 'bot');
-                } else {
-                    addMessage(`Error: ${result.error || 'Failed to get answer'}`, 'bot');
-                }
-            } catch (error) {
-                addMessage(`Error: ${error.message}`, 'bot');
-            } finally {
-                askBtn.disabled = false;
+            if (response.ok) {
+                currentFile = file.name;
+                status.innerHTML = `<i class="fas fa-check-circle"></i> <strong>${file.name}</strong> ready for questions!`;
                 questionInput.disabled = false;
+                askBtn.disabled = false;
                 questionInput.focus();
+                addMessage(`Document "${file.name}" is loaded. Ask me anything about it!`, 'bot');
+            } else {
+                status.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.error || 'Upload failed'}`;
             }
+        } catch (error) {
+            status.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${error.message}`;
         }
+    }
 
-        askBtn.addEventListener('click', askQuestion);
-        questionInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !askBtn.disabled) askQuestion();
-        });
-    </script>
+    async function askQuestion() {
+        const question = questionInput.value.trim();
+        if (!question || !currentFile) return;
+
+        addMessage(question, 'user');
+        questionInput.value = '';
+        askBtn.disabled = true;
+        questionInput.disabled = true;
+
+        // Create typing indicator before sending the request
+        const typingIndicator = createTypingIndicator();
+        chatbox.appendChild(typingIndicator);
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+        try {
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question })
+            });
+
+            const result = await response.json();
+
+            // Remove typing indicator after receiving the response
+            chatbox.removeChild(typingIndicator);
+
+            if (response.ok) {
+                addMessage(result.answer, 'bot');
+            } else {
+                addMessage(`Error: ${result.error || 'Failed to get answer'}`, 'bot');
+            }
+        } catch (error) {
+            // Remove typing indicator in case of error
+            chatbox.removeChild(typingIndicator);
+            addMessage(`Error: ${error.message}`, 'bot');
+        } finally {
+            askBtn.disabled = false;
+            questionInput.disabled = false;
+            questionInput.focus();
+        }
+    }
+
+    askBtn.addEventListener('click', askQuestion);
+    questionInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !askBtn.disabled) askQuestion();
+    });
+</script>
+
 
 </body>
 </html>
