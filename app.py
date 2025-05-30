@@ -147,7 +147,6 @@ def extract_text_from_file(filepath):
     return ""
 
 def call_groq_with_messages(messages, max_tokens=1024):
-    import subprocess
     api_key = app.config['GROQ_API_KEY']
     model = app.config['MODEL']
     url = app.config['GROQ_API_URL']
@@ -158,26 +157,22 @@ def call_groq_with_messages(messages, max_tokens=1024):
         "max_tokens": max_tokens,
         "top_p": 1
     }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
     try:
-        curl_command = [
-            "curl", "-s", url,
-            "-H", "Content-Type: application/json",
-            "-H", f"Authorization: Bearer {api_key}",
-            "-d", json.dumps(payload)
-        ]
-        result = subprocess.run(curl_command, capture_output=True, text=True, check=True)
-        response_json = json.loads(result.stdout)
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        response_json = response.json()
         if "choices" in response_json:
             return response_json['choices'][0]['message']['content']
         elif "error" in response_json:
             raise Exception(f"Groq API error: {response_json['error'].get('message', 'Unknown error')}")
         else:
             raise Exception(f"Unexpected response: {response_json}")
-    except subprocess.CalledProcessError as e:
-        print("Curl error:", e.stderr)
-        raise Exception("Groq API call failed using curl")
     except Exception as e:
-        print("General error:", str(e))
+        print("Groq API error:", str(e))
         raise
 
 def call_groq(prompt, system_message=None, max_tokens=1024):
