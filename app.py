@@ -107,9 +107,26 @@ def allowed_file(filename):
 
 def extract_text_from_file(filepath):
     if filepath.endswith('.pdf'):
-        with open(filepath, 'rb') as f:
-            reader = PyPDF2.PdfReader(f)
-            return '\n'.join([page.extract_text() or '' for page in reader.pages])
+        try:
+            # Try extracting text with PyPDF2 first
+            with open(filepath, 'rb') as f:
+                reader = PyPDF2.PdfReader(f)
+                text = '\n'.join([page.extract_text() or '' for page in reader.pages])
+            # If no text found, try OCR
+            if not text.strip():
+                try:
+                    from pdf2image import convert_from_path
+                    import pytesseract
+                    images = convert_from_path(filepath)
+                    ocr_text = []
+                    for img in images:
+                        ocr_text.append(pytesseract.image_to_string(img))
+                    text = '\n'.join(ocr_text)
+                except Exception as ocr_err:
+                    text = f"OCR failed: {ocr_err}"
+            return text
+        except Exception as e:
+            return f"PDF extraction failed: {e}"
     elif filepath.endswith('.docx'):
         doc = docx.Document(filepath)
         return '\n'.join([para.text for para in doc.paragraphs])
