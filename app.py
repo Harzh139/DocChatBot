@@ -31,7 +31,7 @@ app.config.update({
     'MODEL': 'llama3-70b-8192',
     'GROQ_API_URL': 'https://api.groq.com/openai/v1/chat/completions'
 })
-
+print("GROQ_API_KEY loaded:", repr(app.config['GROQ_API_KEY']))
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -655,6 +655,8 @@ def serve_template(template_name):
     if template_name not in ['index.html', 'login.html', 'register.html', 'profile.html']:
         return "Template not found", 404
     return render_template(template_name)
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
