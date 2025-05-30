@@ -1,0 +1,11 @@
+ID,Name,Age,Salary,Department,Experience,Rating
+1,Alice,25.0,55000.0,HR,2.0,4.5
+2,Bob,,72000.0,Engineering,5.0,4.0
+3,Charlie,28.0,61000.0,Sales,,3.8
+4,David,32.0,2000000.0,HR,10.0,4.9
+5,Eva,,,Engineering,1.0,
+6,Frank,27.0,58000.0,Marketing,3.0,4.2
+7,Grace,29.0,62000.0,Sales,4.0,4.0
+8,Henry,45.0,51000.0,,20.0,2.5
+9,Isla,30.0,63000.0,HR,6.0,
+10,Jack,26.0,2500000.0,Engineering,2.0,4.6

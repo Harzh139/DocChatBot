@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile - Document Insight Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: linear-gradient(135deg, #c3ecff, #f6f6ff);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 20px;
+            color: #222;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+        .profile-container {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            font-weight: bold;
+            margin-right: 20px;
+        }
+        .user-info h2 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .user-info p {
+            color: #666;
+        }
+        .profile-section {
+            margin-bottom: 25px;
+        }
+        .profile-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 12px;
+        }
+        .info-label {
+            font-weight: 500;
+            color: #555;
+            width: 120px;
+        }
+        .info-value {
+            flex: 1;
+            color: #333;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 10px;
+            margin-top: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .stat-item {
+            padding: 15px;
+        }
+        .stat-number {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <h1>📄 Document Insight Bot</h1>
+
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="avatar" id="userAvatar">JD</div>
+            <div class="user-info">
+                <h2 id="userName">John Doe</h2>
+                <p id="userEmail">john.doe@example.com</p>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number">24</div>
+                <div class="stat-label">Documents</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">128</div>
+                <div class="stat-label">Chats</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Templates</div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
+            <div class="info-row">
+                <div class="info-label">Full Name</div>
+                <div class="info-value" id="profileName">John Doe</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Email</div>
+                <div class="info-value" id="profileEmail">john.doe@example.com</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Member Since</div>
+                <div class="info-value">June 15, 2023</div>
+            </div>
+            <button class="btn">
+                <i class="fas fa-edit"></i> Edit Profile
+            </button>
+        </div>
+
+        <div class="profile-section">
+            <h3><i class="fas fa-lock"></i> Security</h3>
+            <div class="info-row">
+                <div class="info-label">Password</div>
+                <div class="info-value">••••••••</div>
+            </div>
+            <button class="btn">
+                <i class="fas fa-key"></i> Change Password
+            </button>
+        </div>
+
+        <div class="profile-section">
+            <h3><i class="fas fa-cog"></i> Settings</h3>
+            <button class="btn btn-secondary">
+                <i class="fas fa-bell"></i> Notification Settings
+            </button>
+            <button class="btn btn-secondary">
+                <i class="fas fa-moon"></i> Dark Mode
+            </button>
+        </div>
+
+        <div class="profile-section">
+            <h3><i class="fas fa-sign-out-alt"></i> Account</h3>
+            <button class="btn btn-danger">
+                <i class="fas fa-trash-alt"></i> Delete Account
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                <i class="fas fa-arrow-left"></i> Back to App
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // In a real app, you would fetch this data from your backend
+        document.addEventListener('DOMContentLoaded', () => {
+            // Example user data - in reality, you'd fetch this from your API
+            const userData = {
+                name: "John Doe",
+                email: "john.doe@example.com",
+                joinDate: "June 15, 2023",
+                initials: "JD"
+            };
+            
+            // Set user data
+            document.getElementById('userName').textContent = userData.name;
+            document.getElementById('userEmail').textContent = userData.email;
+            document.getElementById('profileName').textContent = userData.name;
+            document.getElementById('profileEmail').textContent = userData.email;
+            document.getElementById('userAvatar').textContent = userData.initials;
+            
+            // Add logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                // In a real app, you would call your logout API endpoint
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>

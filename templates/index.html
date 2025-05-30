@@ -20,12 +20,129 @@
             align-items: center;
             padding: 40px 20px;
         }
+        
+        /* Auth forms styling */
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .auth-form h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .auth-form input {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-form input:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+        
+        .auth-form button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-form button[type="submit"] {
+            background: #007bff;
+            color: white;
+        }
+        
+        .auth-form button[type="submit"]:hover {
+            background: #0056b3;
+        }
+        
+        .auth-toggle {
+            text-align: center;
+            margin-top: 15px;
+            color: #555;
+        }
+        
+        .auth-toggle a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .auth-toggle a:hover {
+            text-decoration: underline;
+        }
+        
+        .user-info {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;   /* Center horizontally */
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;        /* Center text inside */
+        }
+        
+        .user-info p {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .user-info button {
+            padding: 8px 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .user-info button:hover {
+            background: #c82333;
+        }
+        
+        .app-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
         h1 {
             font-size: 2.8em;
             margin-bottom: 20px;
             color: #222;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
         }
+        
         #upload-area {
             background: rgba(255, 255, 255, 0.6);
             border: 2px dashed #aaa;
@@ -38,17 +155,21 @@
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
+        
         #upload-area:hover {
             border-color: #007bff;
             transform: translateY(-2px);
         }
+        
         #upload-area.highlight {
             border-color: #007bff;
             background: rgba(0, 123, 255, 0.05);
         }
+        
         #file-input {
             display: none;
         }
+        
         .upload-btn {
             padding: 12px 24px;
             background: #007bff;
@@ -60,10 +181,12 @@
             margin-bottom: 15px;
             box-shadow: 0 2px 10px rgba(0,123,255,0.3);
         }
+        
         .upload-btn:hover {
             background: #0056b3;
             transform: translateY(-2px);
         }
+        
         #status {
             margin-top: 15px;
             font-weight: 500;
@@ -108,13 +231,16 @@
             border-bottom-left-radius: 5px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
+        
         .bot ul, .bot ol {
             padding-left: 20px;
             margin: 8px 0;
         }
+        
         .bot li {
             margin-bottom: 6px;
         }
+        
         .typing-indicator {
             display: inline-flex;
             padding: 8px 16px;
@@ -123,6 +249,7 @@
             margin: 5px 0;
             align-items: center;
         }
+        
         .typing-dot {
             width: 8px;
             height: 8px;
@@ -131,9 +258,11 @@
             margin: 0 2px;
             animation: bounce 1.4s infinite ease-in-out;
         }
+        
         .typing-dot:nth-child(2) {
             animation-delay: 0.2s;
         }
+        
         .typing-dot:nth-child(3) {
             animation-delay: 0.4s;
         }
@@ -144,7 +273,9 @@
             width: 100%;
             max-width: 600px;
             gap: 10px;
+            margin-bottom: 20px;
         }
+        
         #question-input {
             padding: 12px 16px;
             flex: 1;
@@ -155,9 +286,11 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
         }
+        
         #question-input:focus {
             box-shadow: 0 2px 12px rgba(0,123,255,0.2);
         }
+        
         #ask-btn {
             padding: 12px 20px;
             font-size: 1em;
@@ -172,13 +305,16 @@
             align-items: center;
             gap: 8px;
         }
+        
         #ask-btn:hover {
             background: #0056b3;
             transform: translateY(-2px);
         }
+        
         #ask-btn:active {
             transform: translateY(0);
         }
+        
         #ask-btn i {
             font-size: 0.9em;
         }
@@ -188,67 +324,613 @@
             pointer-events: none;
         }
 
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .download-section {
+            background: rgba(255,255,255,0.8);
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .download-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .download-btns {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            padding: 10px 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .quick-actions {
+            width: 100%;
+            max-width: 600px;
+            margin: 10px 0 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .quick-actions .download-btns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .quick-actions .download-btn {
+            padding: 8px 10px;
+            font-size: 0.95em;
+            border-radius: 6px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+        .quick-actions .download-btn:hover {
+            background: #218838;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 0.9em;
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        .success-message {
+            color: #28a745;
+            font-size: 0.9em;
+            margin-top: 5px;
+            text-align: center;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
         @keyframes bounce {
             0%, 60%, 100% { transform: translateY(0); }
             30% { transform: translateY(-5px); }
         }
+        
+        /* Hide app content when not logged in */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Menu styles */
+        .menu-container {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            z-index: 100;
+        }
+
+        .menu-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 1.3em;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+            transition: background 0.2s;
+        }
+
+        .menu-btn:hover {
+            background: #0056b3;
+        }
+
+        .menu-dropdown {
+            display: none;
+            position: absolute;
+            top: 48px;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+            min-width: 210px;
+            padding: 10px 0;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .menu-dropdown .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            color: #222;
+            text-decoration: none;
+            background: none;
+            border: none;
+            width: 100%;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: left;
+        }
+
+        .menu-dropdown .menu-item:hover {
+            background: #f1f1f1;
+        }
+
+        .menu-dropdown .logout-btn {
+            color: #dc3545;
+        }
+
+        .menu-dropdown .logout-btn:hover {
+            background: #ffeaea;
+        }
+
+        .bot-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.8em;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            color: #222;
+            text-shadow: 1px 2px 8px rgba(0,123,255,0.08);
+            position: relative;
+            line-height: 1.1;
+        }
+
+        .bot-title .logo-icon {
+            font-size: 1.2em;
+            margin-right: 10px;
+            vertical-align: middle;
+            color: #007bff;
+            filter: drop-shadow(0 2px 4px #c3ecff);
+        }
+
+        .bot-title .main-name {
+            color: #007bff;
+            letter-spacing: 2px;
+        }
+
+        .bot-title .accent-name {
+            color: #28a745;
+            letter-spacing: 2px;
+        }
+
+        .bot-title .tagline {
+            display: block;
+            font-size: 0.38em;
+            font-weight: 400;
+            color: #555;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        #link-area {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #link-input {
+            width: 70%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        #link-input:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+
+        #link-upload-btn {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,123,255,0.3);
+        }
+
+        #link-upload-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        #link-status {
+            margin-top: 10px;
+            font-weight: 500;
+            color: #28a745;
+            min-height: 24px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+    <!-- Authentication Container -->
+    <div id="auth-container" class="auth-container">
+        <div id="login-form" class="auth-form">
+            <h2>Login</h2>
+            <form id="login">
+                <input type="text" id="login-username" placeholder="Username" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit">Login</button>
+                <div id="login-error" class="error-message"></div>
+            </form>
+            <div class="auth-toggle">
+                Don't have an account? <a href="#" id="show-register">Register</a>
+            </div>
+        </div>
+        
+        <div id="register-form" class="auth-form hidden">
+            <h2>Register</h2>
+            <form id="register">
+                <input type="text" id="register-username" placeholder="Username" required>
+                <input type="email" id="register-email" placeholder="Email" required>
+                <input type="password" id="register-password" placeholder="Password" required>
+                <button type="submit">Register</button>
+                <div id="register-error" class="error-message"></div>
+                <div id="register-success" class="success-message"></div>
+            </form>
+            <div class="auth-toggle">
+                Already have an account? <a href="#" id="show-login">Login</a>
+            </div>
+        </div>
+    </div>
+    
 
-    <h1>📄 Document Insight Bot</h1>
+    
+    <!-- Main App Content (shown when logged in) -->
+    <div id="app-content" class="app-content hidden">
+        <h1 class="bot-title">
+            <span class="logo-icon">📚</span>
+            <span class="main-name">Docu</span><span class="accent-name">Mentor</span>
+            <span class="tagline">Your Smart Document & Data Assistant</span>
+        </h1>
 
-    <div id="upload-area">
-        <label for="file-input" class="upload-btn">
-            <i class="fas fa-upload"></i> Choose Document
-        </label>
-        <p id="status">Supports PDF, DOCX, TXT files</p>
-        <input type="file" id="file-input" accept=".pdf,.docx,.txt">
+        <div id="upload-area">
+            <label for="file-input" class="upload-btn">
+                <i class="fas fa-upload"></i> Choose Document
+            </label>
+            <p id="status">Supports PDF, DOCX, TXT, CSV, XLSX files</p>
+            <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv,.xlsx">
+        </div>
+
+        <div id="link-area">
+            <input type="url" id="link-input" placeholder="Paste an article or webpage link here..." style="width:70%;padding:10px;border-radius:8px;border:1px solid #ccc;">
+            <button id="link-upload-btn" class="upload-btn" style="margin-left:10px;">Analyze Link</button>
+            <div id="link-status" class="success-message"></div>
+        </div>
+
+        <div class="controls">
+            <button id="clear-history-btn" class="control-btn">
+                <i class="fas fa-trash-alt"></i> Clear History
+            </button>
+            <button id="load-history-btn" class="control-btn">
+                <i class="fas fa-history"></i> Load History
+            </button>
+        </div>
+
+        <div id="chatbox"></div>
+
+        <div id="input-area">
+            <input type="text" id="question-input" placeholder="Ask something about the document..." disabled>
+            <button id="ask-btn" disabled>
+                <i class="fas fa-paper-plane"></i> Ask
+            </button>
+        </div>
+
+        <div class="checkbox-container">
+            <input type="checkbox" id="use-context" checked>
+            <label for="use-context">Use document context</label>
+        </div>
     </div>
 
-    <div id="chatbox"></div>
-
-    <div id="input-area">
-        <input type="text" id="question-input" placeholder="Ask something about the document..." disabled>
-        <button id="ask-btn" disabled>
-            <i class="fas fa-paper-plane"></i> Ask
+    <!-- Hamburger menu for user actions -->
+    <div class="menu-container hidden" id="menu-container">
+        <button class="menu-btn" id="menu-btn" title="Menu">
+            <i class="fas fa-bars"></i>
         </button>
+        <div class="menu-dropdown" id="menu-dropdown">
+            <a href="/download/text?format=txt" class="menu-item" title="Download Extracted Text as TXT">
+                <i class="fas fa-file-alt"></i> Text as TXT
+            </a>
+            <a href="/download/text?format=pdf" class="menu-item" title="Download Extracted Text as PDF">
+                <i class="fas fa-file-pdf"></i> Text as PDF
+            </a>
+            <a href="/download/chat?format=txt" class="menu-item" title="Download Chat History as TXT">
+                <i class="fas fa-comments"></i> Chat as TXT
+            </a>
+            <a href="/download/chat?format=pdf" class="menu-item" title="Download Chat History as PDF">
+                <i class="fas fa-comments"></i> Chat as PDF
+            </a>
+            <button id="logout-btn" class="menu-item logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
     </div>
 
     <script>
+    // DOM Elements
     const fileInput = document.getElementById('file-input');
     const uploadArea = document.getElementById('upload-area');
     const status = document.getElementById('status');
     const chatbox = document.getElementById('chatbox');
     const questionInput = document.getElementById('question-input');
     const askBtn = document.getElementById('ask-btn');
-
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+    const loadHistoryBtn = document.getElementById('load-history-btn');
+    const useContextCheckbox = document.getElementById('use-context');
+    
+    // Auth elements
+    const authContainer = document.getElementById('auth-container');
+    const loginForm = document.getElementById('login');
+    const registerForm = document.getElementById('register');
+    const showRegisterLink = document.getElementById('show-register');
+    const showLoginLink = document.getElementById('show-login');
+    //const userInfo = document.getElementById('user-info');
+    //const usernameDisplay = document.getElementById('username-display');
+    const logoutBtn = document.getElementById('logout-btn');
+    const appContent = document.getElementById('app-content');
+    
+    // Login error elements
+    const loginError = document.getElementById('login-error');
+    const registerError = document.getElementById('register-error');
+    const registerSuccess = document.getElementById('register-success');
+    
+    // App state
     let currentFile = null;
     let isBotTyping = false;
+    let currentUsername = null;
 
-    // Drag and drop functionality
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('highlight');
-    });
-
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('highlight');
-    });
-
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('highlight');
-        if (e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            handleFileUpload();
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+        // Check if user is already logged in
+        checkAuth();
+        
+        // Set up auth form toggles
+        showRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+        });
+        
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+        });
+        
+        // Set up login form
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+    
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include', // Important for cookies
+                    body: JSON.stringify({
+                        username,
+                        password
+                    })
+                });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Successfully logged in
+            currentUsername = username;
+            updateUIAfterAuth();
+        } else {
+            loginError.textContent = data.error || 'Login failed';
         }
+    } catch (err) {
+        loginError.textContent = 'Network error. Please try again.';
+    }
+});
+        
+        // Set up register form
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password
+                    })
+                });
+                
+                if (response.ok) {
+                    // Successfully registered
+                    registerError.textContent = '';
+                    registerSuccess.textContent = 'Registration successful! Please login.';
+                    // Switch to login form
+                    document.getElementById('register-form').classList.add('hidden');
+                    document.getElementById('login-form').classList.remove('hidden');
+                    // Clear form
+                    registerForm.reset();
+                } else {
+                    const error = await response.json();
+                    registerError.textContent = error.error || 'Registration failed';
+                }
+            } catch (err) {
+                registerError.textContent = 'Network error. Please try again.';
+            }
+        });
+        
+        // Set up logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                currentUsername = null;
+                updateUIAfterAuth();
+                // Clear any app state
+                resetAppState();
+            } catch (err) {
+                console.error('Logout error:', err);
+            }
+        });
     });
+    
+    // Check authentication status
+    async function checkAuth() {
+    try {
+        const response = await fetch('/api/check_auth', {
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.authenticated) {
+                currentUsername = data.username;
+                updateUIAfterAuth();
+                return true;
+            }
+        }
+        // Not logged in
+        authContainer.classList.remove('hidden');
+        userInfo.classList.add('hidden');
+        appContent.classList.add('hidden');
+        return false;
+    } catch (err) {
+        console.error('Auth check error:', err);
+        return false;
+    }
+}
+    
+    // Update UI after authentication changes
+    function updateUIAfterAuth() {
+        if (currentUsername) {
+            // User is logged in
+            authContainer.classList.add('hidden');
+            //userInfo.classList.remove('hidden');
+            appContent.classList.remove('hidden');
+            //usernameDisplay.textContent = currentUsername;
+            // Load chat history
+            loadChatHistory();
+        } else {
+            // User is logged out
+            authContainer.classList.remove('hidden');
+            //userInfo.classList.add('hidden');
+            appContent.classList.add('hidden');
+            // Clear forms
+            loginForm.reset();
+            registerForm.reset();
+            loginError.textContent = '';
+            registerError.textContent = '';
+            registerSuccess.textContent = '';
+            // Show login form by default
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+        }
 
+        // Menu visibility
+        updateMenuVisibility();
+    }
+    
+    // Reset app state when logging out
+    function resetAppState() {
+        currentFile = null;
+        chatbox.innerHTML = '';
+        status.textContent = 'Supports PDF, DOCX, TXT, CSV, XLSX files';
+        questionInput.value = '';
+        questionInput.disabled = true;
+        askBtn.disabled = true;
+    }
+    
     // Improved typing effect with bullet point support
     function typeResponse(element, text, delay = 20) {
         let i = 0;
@@ -320,8 +1002,10 @@
         if (!fileInput.files.length) return;
 
         const file = fileInput.files[0];
-        if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(file.type)) {
-            status.textContent = '❌ Invalid file type. Please upload PDF, DOCX, or TXT.';
+        const allowedExtensions = ['pdf', 'docx', 'txt', 'csv', 'xlsx'];
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(fileExt)) {
+            status.textContent = '❌ Invalid file type. Please upload PDF, DOCX, TXT, CSV, or XLSX.';
             return;
         }
 
@@ -335,7 +1019,8 @@
 
             const response = await fetch('/upload', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'include' // Important for sessions
             });
 
             const result = await response.json();
@@ -346,7 +1031,7 @@
                 questionInput.disabled = false;
                 askBtn.disabled = false;
                 questionInput.focus();
-                addMessage(`Document "${file.name}" is loaded. Ask me anything about it!`, 'bot');
+                addMessage(`Hey ${currentUsername}, you have uploaded "${file.name}". Ask me anything about it!`, 'bot');
             } else {
                 status.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.error || 'Upload failed'}`;
             }
@@ -372,8 +1057,14 @@
         try {
             const response = await fetch('/ask', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question })
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    question,
+                    use_context: useContextCheckbox.checked
+                }),
+                credentials: 'include' // Important for sessions
             });
 
             const result = await response.json();
@@ -397,12 +1088,156 @@
         }
     }
 
+    // Load chat history from server
+    async function loadChatHistory() {
+        try {
+            const response = await fetch('/chat/history?limit=10', {
+                credentials: 'include' // Important for sessions
+            });
+            const data = await response.json();
+            
+            if (response.ok && data.chats && data.chats.length > 0) {
+                // Clear current chat
+                chatbox.innerHTML = '';
+                
+                // Add each message to the chat (in reverse order)
+                data.chats.reverse().forEach(msg => {
+                    addMessage(msg.question, 'user');
+                    addMessage(msg.answer, 'bot');
+                });
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+        }
+    }
+
+    // Clear chat history on server and locally
+    async function clearChatHistory() {
+        try {
+            await fetch('/chat/clear', {
+                method: 'POST',
+                credentials: 'include' // Important for sessions
+            });
+            chatbox.innerHTML = '';
+            addMessage("Chat history has been cleared.", 'bot');
+        } catch (error) {
+            console.error('Error clearing chat history:', error);
+            addMessage("Failed to clear chat history.", 'bot');
+        }
+    }
+
+    // Event listeners
     askBtn.addEventListener('click', askQuestion);
     questionInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !askBtn.disabled) askQuestion();
     });
-</script>
+    
+    clearHistoryBtn.addEventListener('click', clearChatHistory);
+    loadHistoryBtn.addEventListener('click', loadChatHistory);
+    
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('highlight');
+    });
 
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('highlight');
+    });
 
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('highlight');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileUpload();
+        }
+    });
+
+    const allowedExtensions = ['pdf', 'docx', 'txt', 'csv', 'xlsx'];
+
+    // Menu functionality
+    const menuContainer = document.getElementById('menu-container');
+    const menuBtn = document.getElementById('menu-btn');
+    const menuDropdown = document.getElementById('menu-dropdown');
+
+    // Show menu only when logged in
+    function updateMenuVisibility() {
+        if (currentUsername) {
+            menuContainer.classList.remove('hidden');
+        } else {
+            menuContainer.classList.add('hidden');
+            menuDropdown.style.display = 'none';
+        }
+    }
+
+    // Toggle dropdown
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menuDropdown.style.display = menuDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', () => {
+        menuDropdown.style.display = 'none';
+    });
+
+    // Logout from menu
+    document.querySelectorAll('.logout-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            try {
+                await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                currentUsername = null;
+                updateUIAfterAuth();
+                // Clear any app state
+                resetAppState();
+            } catch (err) {
+                console.error('Logout error:', err);
+            }
+        });
+    });
+
+    const linkInput = document.getElementById('link-input');
+    const linkUploadBtn = document.getElementById('link-upload-btn');
+    const linkStatus = document.getElementById('link-status');
+
+    linkUploadBtn.addEventListener('click', async () => {
+        const url = linkInput.value.trim();
+        if (!url) {
+            linkStatus.textContent = "Please enter a valid link.";
+            return;
+        }
+        linkStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching and analyzing...';
+        askBtn.disabled = true;
+        questionInput.disabled = true;
+        try {
+            const response = await fetch('/upload_link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ url })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                currentFile = url; // Mark as "uploaded"
+                linkStatus.innerHTML = `<i class="fas fa-check-circle"></i> Link analyzed! Ask me anything about it.`;
+                questionInput.disabled = false;
+                askBtn.disabled = false;
+                questionInput.focus();
+                // Use the page title if available, else fallback to url
+                const displayTitle = result.page_title || url;
+                addMessage(`Hey ${currentUsername}, you have uploaded the article "${displayTitle}". Ask me anything about it!`, 'bot');
+            } else {
+                linkStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.error || 'Failed to analyze link.'}`;
+            }
+        } catch (error) {
+            linkStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${error.message}`;
+        }
+    });
+    </script>
 </body>
 </html>

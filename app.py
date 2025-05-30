@@ -1,266 +1,648 @@
-from flask import Flask, render_template, request, jsonify
-from werkzeug.utils import secure_filename
-from PyPDF2 import PdfReader
-from docx import Document
-import faiss
-import numpy as np
-import re
 import os
-from transformers import pipeline
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-import torch
-from time import time
+import sqlite3
+import json
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import numpy as np
+import docx
+import PyPDF2
+from io import BytesIO
+import textwrap
+from flask import Flask, request, jsonify, render_template, send_file, make_response, redirect, url_for, flash
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
+from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import timedelta
+from functools import wraps
 
-# ------------------------ Flask App Configuration ------------------------
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'docx', 'txt'}
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'supersecret')
+app.config.update({
+    'UPLOAD_FOLDER': 'uploads',
+    'MAX_CONTENT_LENGTH': 16 * 1024 * 1024,  # 16MB max
+    'DATABASE': 'users.db',
+    'SESSION_COOKIE_SECURE': True,
+    'SESSION_COOKIE_HTTPONLY': True,
+    'SESSION_COOKIE_SAMESITE': 'Lax',
+    'PERMANENT_SESSION_LIFETIME': timedelta(days=1),
+    'ALLOWED_EXTENSIONS': {'pdf', 'docx', 'txt', 'csv', 'xlsx'},
+    'GROQ_API_KEY': os.getenv('GROQ_API_KEY'),
+    'MODEL': 'llama3-70b-8192',
+    'GROQ_API_URL': 'https://api.groq.com/openai/v1/chat/completions'
+})
 
-# ------------------------ Initialize Optimized Models ------------------------
-DEVICE = 0 if torch.cuda.is_available() else -1
-EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"  # More accurate than MiniLM
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
-# Load models in FP16 for faster inference (if GPU available)
-embedder = HuggingFaceEmbeddings(
-    model_name=EMBEDDING_MODEL,
-    model_kwargs={'device': 'cuda' if DEVICE == 0 else 'cpu'},
-    encode_kwargs={'normalize_embeddings': True}  # Better similarity matching
-)
+class User(UserMixin):
+    def __init__(self, id, username, email):
+        self.id = id
+        self.username = username
+        self.email = email
 
-llm = pipeline(
-    "text2text-generation",
-    model="google/flan-t5-large",
-    device=DEVICE,
-    torch_dtype=torch.float16 if DEVICE == 0 else torch.float32
-)
+def get_db():
+    db = sqlite3.connect(app.config['DATABASE'])
+    db.row_factory = sqlite3.Row
+    return db
 
-# ------------------------ Global Variables ------------------------
-index = None
-document_chunks = []
-document_embeddings = None
+def init_db():
+    with app.app_context():
+        db = get_db()
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                filepath TEXT NOT NULL,
+                extracted_text TEXT,
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS chat_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                question TEXT NOT NULL,
+                answer TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        db.commit()
+init_db()
 
-# ------------------------ Optimized Utility Functions ------------------------
+@login_manager.user_loader
+def load_user(user_id):
+    db = get_db()
+    user = db.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    db.close()
+    if user:
+        return User(id=user['id'], username=user['username'], email=user['email'])
+    return None
+
+def login_required_json(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({"error": "Authentication required"}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-def extract_text_from_file(file_path):
-    """Faster text extraction with error handling"""
-    try:
-        ext = file_path.rsplit('.', 1)[1].lower()
-        if ext == 'pdf':
-            with open(file_path, 'rb') as f:
-                return ''.join([page.extract_text() or '' for page in PdfReader(f).pages])
-        elif ext == 'docx':
-            return '\n'.join([para.text for para in Document(file_path).paragraphs])
-        elif ext == 'txt':
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
-    except Exception as e:
-        print(f"Error reading {file_path}: {str(e)}")
+def extract_text_from_file(filepath):
+    if filepath.endswith('.pdf'):
+        with open(filepath, 'rb') as f:
+            reader = PyPDF2.PdfReader(f)
+            return '\n'.join([page.extract_text() or '' for page in reader.pages])
+    elif filepath.endswith('.docx'):
+        doc = docx.Document(filepath)
+        return '\n'.join([para.text for para in doc.paragraphs])
+    elif filepath.endswith('.txt'):
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return f.read()
+    elif filepath.endswith('.csv') or filepath.endswith('.xlsx'):
+        try:
+            if filepath.endswith('.csv'):
+                df = pd.read_csv(filepath)
+            else:
+                df = pd.read_excel(filepath)
+            analysis = []
+            analysis.append(f"Shape: {df.shape[0]} rows, {df.shape[1]} columns")
+            analysis.append(f"Columns: {', '.join(df.columns)}")
+            analysis.append("\nColumn Types:")
+            analysis.append(str(df.dtypes))
+            analysis.append("\nMissing Values per Column:")
+            analysis.append(str(df.isnull().sum()))
+            outlier_report = []
+            for col in df.select_dtypes(include=[np.number]).columns:
+                q1 = df[col].quantile(0.25)
+                q3 = df[col].quantile(0.75)
+                iqr = q3 - q1
+                lower = q1 - 1.5 * iqr
+                upper = q3 + 1.5 * iqr
+                outliers = df[(df[col] < lower) | (df[col] > upper)][col]
+                outlier_report.append(f"{col}: {len(outliers)} outliers")
+            if outlier_report:
+                analysis.append("\nOutlier Report:")
+                analysis.extend(outlier_report)
+            return '\n'.join(analysis)
+        except Exception as e:
+            return f"Error reading data file: {str(e)}"
     return ""
 
-def preprocess_text(text):
-    """Optimized preprocessing"""
-    text = re.sub(r'\s+', ' ', text)  # Collapse whitespace
-    return text.strip()
-
-def chunk_text(text):
-    """Smart chunking with overlap for better context"""
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,  # Adjusted for larger documents
-        chunk_overlap=200,
-        separators=["\n\n", "\n", ". ", " ", ""]  # Better semantic splitting
-    )
-    return text_splitter.split_text(text)
-
-def create_index(text_chunks):
-    global index, document_chunks, document_embeddings
-    document_chunks = text_chunks
-    document_embeddings = embedder.embed_documents(text_chunks)
-    
-    # Convert to numpy array FIRST
-    document_embeddings_np = np.array(document_embeddings).astype('float32')
-    
-    # Then get dimension and normalize
-    dimension = document_embeddings_np.shape[1]  # Now we can use .shape!
-    index = faiss.IndexFlatIP(dimension)
-    faiss.normalize_L2(document_embeddings_np)  # Operate on numpy array
-    
-    index.add(document_embeddings_np)  # Add the normalized embeddings
-
-def get_relevant_context(question, top_k=5):
-    """Enhanced context retrieval with keyword boosting"""
-    start_time = time()
-    
-    # Embed question
-    question_embedding = embedder.embed_query(question)
-    question_embedding = np.array([question_embedding]).astype('float32')
-    faiss.normalize_L2(question_embedding)
-    
-    # Semantic search
-    D, I = index.search(question_embedding, k=top_k*2)  # Get extra for filtering
-    
-    # Keyword boosting (case-insensitive)
-    keywords = set(re.findall(r'\w+', question.lower()))
-    boosted_chunks = []
-    for idx in I[0]:
-        chunk = document_chunks[idx]
-        chunk_lower = chunk.lower()
-        
-        # Boost if keywords found or contains important terms
-        if (any(kw in chunk_lower for kw in keywords) or \
-           any(term in chunk_lower for term in ["inception-resnet", "accuracy", "%", "probability"])):
-            boosted_chunks.append((idx, chunk))
-    
-    # Use boosted chunks if found, otherwise fallback
-    selected_chunks = boosted_chunks[:top_k] if boosted_chunks else [(i, document_chunks[i]) for i in I[0][:top_k]]
-    
-    # Deduplicate
-    seen = set()
-    unique_chunks = []
-    for idx, chunk in selected_chunks:
-        if chunk not in seen:
-            unique_chunks.append(chunk)
-            seen.add(chunk)
-    
-    print(f"Context retrieval took {time() - start_time:.2f}s")
-    return "\n---\n".join(unique_chunks[:top_k])
-
-def format_response(text):
-    """Convert raw text into structured bullet points with emojis"""
-    if not text.strip():
-        return "🚫 I couldn't find that information."
-    
-    # Split into sentences
-    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
-    
-    # Add bullet points and emojis
-    emojis = ["🔹", "✅", "📌", "🌟", "📝"]  # Rotation for variety
-    formatted = []
-    for i, sentence in enumerate(sentences):
-        emoji = emojis[i % len(emojis)]
-        formatted.append(f"{emoji} {sentence}")
-    
-    return "\n".join(formatted)
-
-def generate_rag_response(question, context, max_length=2000):  # Increased max_length
-    """Optimized RAG response generation"""
-    start_time = time()
-    
-    # Truncate context intelligently
-    context = context[:max_length]
-    
-    prompt = f"""Provide a detailed answer in bullet points with emojis. Use only this context:
-    
-Context:
-{context}
-
-Question: {question}
-
-Answer (5-7 bullet points max):"""  # Increased bullet points for more detail
-    
+def call_groq_with_messages(messages, max_tokens=1024):
+    import subprocess
+    api_key = app.config['GROQ_API_KEY']
+    model = app.config['MODEL']
+    url = app.config['GROQ_API_URL']
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": max_tokens,
+        "top_p": 1
+    }
     try:
-        response = llm(
-            prompt,
-            max_new_tokens=300,  # Increased token limit for more comprehensive answers
-            temperature=0.3,  # Less randomness
-            do_sample=False,
-            num_beams=5  # Increased beams for better quality
-        )[0]['generated_text']
-        
-        print(f"LLM generation took {time() - start_time:.2f}s")
-        return format_response(response)
+        curl_command = [
+            "curl", "-s", url,
+            "-H", "Content-Type: application/json",
+            "-H", f"Authorization: Bearer {api_key}",
+            "-d", json.dumps(payload)
+        ]
+        result = subprocess.run(curl_command, capture_output=True, text=True, check=True)
+        response_json = json.loads(result.stdout)
+        if "choices" in response_json:
+            return response_json['choices'][0]['message']['content']
+        elif "error" in response_json:
+            raise Exception(f"Groq API error: {response_json['error'].get('message', 'Unknown error')}")
+        else:
+            raise Exception(f"Unexpected response: {response_json}")
+    except subprocess.CalledProcessError as e:
+        print("Curl error:", e.stderr)
+        raise Exception("Groq API call failed using curl")
     except Exception as e:
-        print(f"Generation error: {str(e)}")
-        return "⚠️ Error generating response"
+        print("General error:", str(e))
+        raise
 
+def call_groq(prompt, system_message=None, max_tokens=1024):
+    return call_groq_with_messages(
+        messages=[
+            {"role": "system", "content": system_message or "You're a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=max_tokens
+    )
 
-# ------------------------ Flask Routes ------------------------
 @app.route('/')
 def home():
     return render_template('index.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        if request.is_json:
+            data = request.get_json()
+            username = data.get('username')
+            email = data.get('email')
+            password = data.get('password')
+        else:
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
+        if not username or not email or not password:
+            if request.is_json:
+                return jsonify({"error": "All fields are required"}), 400
+            flash('All fields are required', 'error')
+            return redirect(url_for('register'))
+        db = get_db()
+        try:
+            password_hash = generate_password_hash(password)
+            db.execute(
+                'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
+                (username, email, password_hash)
+            )
+            db.commit()
+            if request.is_json:
+                return jsonify({"message": "Registration successful! Please log in."})
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+        except sqlite3.IntegrityError:
+            if request.is_json:
+                return jsonify({"error": "Username or email already exists"}), 400
+            flash('Username or email already exists', 'error')
+        finally:
+            db.close()
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if request.is_json:
+            data = request.get_json()
+            identifier = data.get('username') or data.get('email')
+            password = data.get('password')
+        else:
+            identifier = request.form.get('username') or request.form.get('email')
+            password = request.form.get('password')
+        db = get_db()
+        user = db.execute(
+            'SELECT * FROM users WHERE username = ? OR email = ?', (identifier, identifier)
+        ).fetchone()
+        db.close()
+        if user and check_password_hash(user['password_hash'], password):
+            user_obj = User(id=user['id'], username=user['username'], email=user['email'])
+            login_user(user_obj)
+            if request.is_json:
+                return jsonify({"message": "Login successful", "username": user['username']})
+            else:
+                next_page = request.args.get('next')
+                return redirect(next_page or url_for('home'))
+        else:
+            if request.is_json:
+                return jsonify({"error": "Invalid username/email or password"}), 401
+            flash('Invalid username/email or password', 'error')
+    return render_template('login.html')
+
+@app.route('/logout', methods=['POST'])
+@login_required_json
+def logout():
+    logout_user()
+    return jsonify({"message": "Logged out successfully"})
+
+@app.route('/api/check_auth')
+def check_auth():
+    if current_user.is_authenticated:
+        return jsonify({
+            "authenticated": True,
+            "username": current_user.username
+        })
+    return jsonify({"authenticated": False})
+
 @app.route('/upload', methods=['POST'])
+@login_required_json
 def upload_file():
     if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
+        return jsonify({"error": "No file part"}), 400
     file = request.files['file']
-    if not file or file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    if not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file type'}), 400
-    
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file and allowed_file(file.filename):
+        try:
+            filename = secure_filename(file.filename)
+            user_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], str(current_user.id))
+            os.makedirs(user_upload_dir, exist_ok=True)
+            filepath = os.path.join(user_upload_dir, filename)
+            file.save(filepath)
+            extracted_text = extract_text_from_file(filepath)
+            db = get_db()
+            db.execute(
+                'INSERT INTO documents (user_id, filename, filepath, extracted_text) VALUES (?, ?, ?, ?)',
+                (current_user.id, filename, filepath, extracted_text)
+            )
+            db.commit()
+            db.close()
+            return jsonify({
+                "message": "File uploaded and text extracted successfully",
+                "filename": filename,
+                "text_preview": textwrap.shorten(extracted_text, width=300, placeholder="...")
+            })
+        except Exception as e:
+            return jsonify({"error": f"Error processing file: {str(e)}"}), 500
+    return jsonify({"error": "File type not allowed"}), 400
+
+@app.route('/upload_link', methods=['POST'])
+@login_required_json
+def upload_link():
+    print("Upload link endpoint called")
+    data = request.get_json()
+    url = data.get('url')
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
     try:
-        filename = secure_filename(file.filename)
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        
-        text = extract_text_from_file(filepath)
-        if not text.strip():
-            return jsonify({'error': 'Empty file'}), 400
-        
-        chunks = chunk_text(preprocess_text(text))
-        create_index(chunks)
-        
+        resp = requests.get(url, timeout=10)
+        if resp.status_code != 200:
+            return jsonify({"error": f"Failed to fetch URL (status {resp.status_code})"}), 400
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        for tag in soup(['script', 'style', 'noscript']):
+            tag.decompose()
+        text = ' '.join(soup.stripped_strings)
+        # Extract the page title
+        page_title = soup.title.string.strip() if soup.title and soup.title.string else url
+        if not text or len(text) < 100:
+            return jsonify({"error": "Could not extract meaningful content from the link."}), 400
+        db = get_db()
+        db.execute(
+            'INSERT INTO documents (user_id, filename, filepath, extracted_text) VALUES (?, ?, ?, ?)',
+            (current_user.id, page_title, url, text)
+        )
+        db.commit()
+        db.close()
         return jsonify({
-            'status': 'success',
-            'filename': filename,
-            'chunks': len(chunks)
+            "message": "Link content fetched and analyzed successfully.",
+            "filename": page_title,
+            "text_preview": text[:300] + "..." if len(text) > 300 else text,
+            "page_title": page_title
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": f"Error processing link: {str(e)}"}), 500
 
 @app.route('/ask', methods=['POST'])
+@login_required_json
 def ask_question():
-    if index is None:
-        return jsonify({'error': 'Upload a document first'}), 400
-    
-    question = request.json.get('question', '').strip()
-    if not question:
-        return jsonify({'error': 'Empty question'}), 400
-    
     try:
-        context = get_relevant_context(question)
-        answer = generate_rag_response(question, context)
-        
+        data = request.json
+        question = data.get('question')
+        use_context = data.get('use_context', True)
+        if not question:
+            return jsonify({"error": "No question provided"}), 400
+        db = get_db()
+        document = db.execute(
+            'SELECT extracted_text FROM documents WHERE user_id = ? ORDER BY uploaded_at DESC LIMIT 1',
+            (current_user.id,)
+        ).fetchone()
+        if not document or not document['extracted_text'].strip():
+            return jsonify({"error": "No document uploaded or text extracted yet"}), 400
+
+        # Detect if user is asking for suggestions
+        suggestion_keywords = ['suggestion', 'suggest', 'recommend', 'advice', 'how to', 'ideas']
+        is_suggestion = any(kw in question.lower() for kw in suggestion_keywords)
+
+        if use_context:
+            previous_questions = db.execute(
+                '''SELECT question, answer FROM chat_history 
+                WHERE user_id = ? 
+                ORDER BY timestamp DESC LIMIT 3''',
+                (current_user.id,)
+            ).fetchall()
+            previous_questions = reversed(previous_questions)
+        else:
+            previous_questions = []
+
+        # Build the prompt
+        if is_suggestion:
+            system_prompt = (
+                "You are an expert assistant. Based on the following document content, "
+                "provide actionable suggestions, recommendations, or ideas to help the user accomplish their task. "
+                "Be specific and practical.\n\n"
+                f"Document Content:\n{document['extracted_text']}\n"
+            )
+        else:
+            system_prompt = (
+                "You're an expert document analyst. Answer questions based strictly on the provided document content.\n"
+                f"Current Document Content:\n{document['extracted_text']}\n"
+                "If the answer is not in the document, say \"I don't know.\"."
+            )
+
+        messages = [{
+            "role": "system",
+            "content": system_prompt
+        }]
+        for qa in previous_questions:
+            messages.append({
+                "role": "user",
+                "content": qa['question']
+            })
+            messages.append({
+                "role": "assistant",
+                "content": qa['answer']
+            })
+        messages.append({
+            "role": "user",
+            "content": question
+        })
+
+        response = call_groq_with_messages(
+            messages=messages,
+            max_tokens=1500
+        )
+        fallback_triggers = [
+            "i don't know.", "i don't know", "not found in the document.",
+            "not found in the document", "", None
+        ]
+        if response is None or response.strip().lower() in fallback_triggers:
+            fallback_messages = [
+                {"role": "system", "content": "You're a helpful assistant. Answer the user's question as best as you can."},
+                {"role": "user", "content": question}
+            ]
+            fallback_response = call_groq_with_messages(
+                messages=fallback_messages,
+                max_tokens=1500
+            )
+            if (
+                fallback_response is None or
+                fallback_response.strip() == "" or
+                fallback_response.strip().lower() in fallback_triggers
+            ):
+                friendly_msg = "Sorry, I couldn't understand your question. Could you please rephrase it or ask more clearly?"
+                db.execute(
+                    'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
+                    (current_user.id, question, friendly_msg)
+                )
+                db.commit()
+                db.close()
+                return jsonify({
+                    "answer": friendly_msg,
+                    "model": app.config['MODEL'],
+                    "context_used": False,
+                    "source": "fallback"
+                })
+            db.execute(
+                'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
+                (current_user.id, question, fallback_response)
+            )
+            db.commit()
+            db.close()
+            return jsonify({
+                "answer": fallback_response,
+                "model": app.config['MODEL'],
+                "context_used": False,
+                "source": "external"
+            })
+        db.execute(
+            'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
+            (current_user.id, question, response)
+        )
+        db.commit()
+        db.close()
         return jsonify({
-            'question': question,
-            'answer': answer,
-            'context_used': context[:500] + "..."  # Preview
+            "answer": response,
+            "model": app.config['MODEL'],
+            "context_used": use_context,
+            "source": "document"
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/summary', methods=['GET'])
-def summarize():
-    if not document_chunks:
-        return jsonify({'error': 'No document loaded'}), 400
-    
-    try:
-        context = "\n".join(document_chunks[:3])  # First few chunks
-        prompt = f"""Summarize key points in 5 bullet points with emojis:
-        
-{context}
-
-Summary:"""
-        
-        summary = llm(
-            prompt,
-            max_new_tokens=150,
-            temperature=0.2  # More deterministic
-        )[0]['generated_text']
-        
         return jsonify({
-            'summary': format_response(summary)
+            "error": str(e),
+            "solution": "Please try again later"
+        }), 500
+
+@app.route('/download/text', methods=['GET'])
+@login_required
+def download_text():
+    format = request.args.get('format', 'txt').lower()
+    db = get_db()
+    document = db.execute(
+        'SELECT extracted_text FROM documents WHERE user_id = ? ORDER BY uploaded_at DESC LIMIT 1',
+        (current_user.id,)
+    ).fetchone()
+    db.close()
+    if not document or not document['extracted_text'].strip():
+        flash('No document text available to download', 'error')
+        return redirect(url_for('home'))
+    try:
+        if format == 'txt':
+            response = make_response(document['extracted_text'])
+            response.headers['Content-Type'] = 'text/plain'
+            response.headers['Content-Disposition'] = f'attachment; filename=extracted_text_{current_user.id}.txt'
+            return response
+        elif format == 'pdf':
+            from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
+            buffer = BytesIO()
+            p = canvas.Canvas(buffer, pagesize=letter)
+            text = p.beginText(40, 750)
+            text.setFont("Helvetica", 12)
+            for line in document['extracted_text'].split('\n'):
+                for wrapped_line in textwrap.wrap(line, width=100):
+                    text.textLine(wrapped_line)
+            p.drawText(text)
+            p.showPage()
+            p.save()
+            buffer.seek(0)
+            return send_file(
+                buffer,
+                as_attachment=True,
+                download_name=f'extracted_text_{current_user.id}.pdf',
+                mimetype='application/pdf'
+            )
+        else:
+            flash('Invalid format. Use "txt" or "pdf"', 'error')
+            return redirect(url_for('home'))
+    except Exception as e:
+        flash(f'Failed to generate download: {str(e)}', 'error')
+        return redirect(url_for('home'))
+
+@app.route('/download/chat', methods=['GET'])
+@login_required
+def download_chat():
+    format = request.args.get('format', 'txt').lower()
+    db = get_db()
+    chats = db.execute(
+        'SELECT question, answer FROM chat_history WHERE user_id = ? ORDER BY timestamp DESC',
+        (current_user.id,)
+    ).fetchall()
+    db.close()
+    if not chats:
+        flash('No chat history available to download', 'error')
+        return redirect(url_for('home'))
+    try:
+        chat_text = f"Chat History for {current_user.username}\n\n"
+        for chat in chats:
+            chat_text += f"Q: {chat['question']}\n"
+            chat_text += f"A: {chat['answer']}\n\n"
+            chat_text += "-" * 50 + "\n\n"
+        if format == 'txt':
+            response = make_response(chat_text)
+            response.headers['Content-Type'] = 'text/plain'
+            response.headers['Content-Disposition'] = f'attachment; filename=chat_history_{current_user.id}.txt'
+            return response
+        elif format == 'pdf':
+            from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
+            buffer = BytesIO()
+            p = canvas.Canvas(buffer, pagesize=letter)
+            text = p.beginText(40, 750)
+            text.setFont("Helvetica", 12)
+            for line in chat_text.split('\n'):
+                for wrapped_line in textwrap.wrap(line, width=100):
+                    text.textLine(wrapped_line)
+            p.drawText(text)
+            p.showPage()
+            p.save()
+            buffer.seek(0)
+            return send_file(
+                buffer,
+                as_attachment=True,
+                download_name=f'chat_history_{current_user.id}.pdf',
+                mimetype='application/pdf'
+            )
+        else:
+            flash('Invalid format. Use "txt" or "pdf"', 'error')
+            return redirect(url_for('home'))
+    except Exception as e:
+        flash(f'Failed to generate download: {str(e)}', 'error')
+        return redirect(url_for('home'))
+
+@app.route('/chat/history', methods=['GET'])
+@login_required_json
+def get_chat_history():
+    try:
+        limit = request.args.get('limit', default=10, type=int)
+        offset = request.args.get('offset', default=0, type=int)
+        db = get_db()
+        chats = db.execute(
+            '''SELECT id, question, answer, timestamp 
+            FROM chat_history 
+            WHERE user_id = ? 
+            ORDER BY timestamp DESC 
+            LIMIT ? OFFSET ?''',
+            (current_user.id, limit, offset)
+        ).fetchall()
+        total_chats = db.execute(
+            'SELECT COUNT(*) FROM chat_history WHERE user_id = ?',
+            (current_user.id,)
+        ).fetchone()[0]
+        db.close()
+        return jsonify({
+            "chats": [dict(chat) for chat in chats],
+            "total": total_chats,
+            "limit": limit,
+            "offset": offset
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/chat/clear', methods=['POST'])
+@login_required_json
+def clear_chat_history():
+    try:
+        db = get_db()
+        db.execute(
+            'DELETE FROM chat_history WHERE user_id = ?',
+            (current_user.id,)
+        )
+        db.commit()
+        db.close()
+        return jsonify({"message": "Chat history cleared"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/profile')
+@login_required
+def profile():
+    db = get_db()
+    doc_count = db.execute(
+        'SELECT COUNT(*) FROM documents WHERE user_id = ?',
+        (current_user.id,)
+    ).fetchone()[0]
+    chat_count = db.execute(
+        'SELECT COUNT(*) FROM chat_history WHERE user_id = ?',
+        (current_user.id,)
+    ).fetchone()[0]
+    recent_docs = db.execute(
+        'SELECT filename, uploaded_at FROM documents WHERE user_id = ? ORDER BY uploaded_at DESC LIMIT 5',
+        (current_user.id,)
+    ).fetchall()
+    db.close()
+    return jsonify({
+        "username": current_user.username,
+        "email": current_user.email,
+        "doc_count": doc_count,
+        "chat_count": chat_count,
+        "recent_docs": [dict(doc) for doc in recent_docs]
+    })
+
+@app.route('/templates/<template_name>')
+def serve_template(template_name):
+    if template_name not in ['index.html', 'login.html', 'register.html', 'profile.html']:
+        return "Template not found", 404
+    return render_template(template_name)
 
 if __name__ == '__main__':
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(host='0.0.0.0', port=7860, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
