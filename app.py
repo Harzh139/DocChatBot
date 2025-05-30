@@ -15,7 +15,14 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 from functools import wraps
+import subprocess
+try:
+    out = subprocess.check_output(['which', 'pdftoppm'])
+    print("pdftoppm found at:", out.decode().strip())
+except Exception as e:
+    print("pdftoppm not found:", e)
 
+os.system("apt-get update && apt-get install -y poppler-utils")
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'supersecret')
 app.config.update({
