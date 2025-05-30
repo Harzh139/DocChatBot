@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 import docx
+import pytesseract
 import PyPDF2
 from io import BytesIO
 import textwrap
