@@ -6,3 +6,8 @@ services:
       apt-get update && apt-get install -y tesseract-ocr libtesseract-dev poppler-utils
       pip install -r requirements.txt
     startCommand: gunicorn app:app
+    envVars:
+      - key: GROQ_API_KEY
+        value: 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
+      - key: FLASK_SECRET_KEY
+        value: supersecret123
