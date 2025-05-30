@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: docchatbot
+    env: python
+    buildCommand: |
+      apt-get update && apt-get install -y tesseract-ocr libtesseract-dev poppler-utils
+      pip install -r requirements.txt
+    startCommand: gunicorn app:app
