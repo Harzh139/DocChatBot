@@ -133,7 +133,11 @@ def extract_text_from_file(filepath):
                     from pdf2image import convert_from_path
                     images = convert_from_path(filepath)
                     ocr_text = []
-                    for img in images:
+                    max_pages = 10  # Only OCR first 10 pages
+                    for i, img in enumerate(images):
+                        if i >= max_pages:
+                            ocr_text.append("[OCR stopped: file too large]")
+                            break
                         ocr_text.append(pytesseract.image_to_string(img))
                     text = '\n'.join(ocr_text)
                 except Exception as ocr_err:
@@ -679,6 +683,18 @@ def chunk_text(text, chunk_size=3000, overlap=200):
         chunks.append(text[start:end])
         start += chunk_size - overlap
     return chunks
+
+@app.errorhandler(404)
+def not_found_error(error):
+    if request.path.startswith('/api') or request.path.startswith('/upload') or request.path.startswith('/ask'):
+        return jsonify({"error": "Not found"}), 404
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    if request.path.startswith('/api') or request.path.startswith('/upload') or request.path.startswith('/ask'):
+        return jsonify({"error": "Internal server error"}), 500
+    return render_template('500.html'), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
