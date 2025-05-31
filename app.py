@@ -127,21 +127,9 @@ def extract_text_from_file(filepath):
             with open(filepath, 'rb') as f:
                 reader = PyPDF2.PdfReader(f)
                 text = '\n'.join([page.extract_text() or '' for page in reader.pages])
-            # If no text found, try OCR
+            # If no text found, reject image-based PDF
             if not text.strip():
-                try:
-                    from pdf2image import convert_from_path
-                    images = convert_from_path(filepath)
-                    ocr_text = []
-                    max_pages = 10  # Only OCR first 10 pages
-                    for i, img in enumerate(images):
-                        if i >= max_pages:
-                            ocr_text.append("[OCR stopped: file too large]")
-                            break
-                        ocr_text.append(pytesseract.image_to_string(img))
-                    text = '\n'.join(ocr_text)
-                except Exception as ocr_err:
-                    text = f"OCR failed: {ocr_err}"
+                return "❌ Sorry, image-based/scanned PDFs are not supported. Please upload a text-based PDF."
             return text
         except Exception as e:
             return f"PDF extraction failed: {e}"
@@ -405,7 +393,84 @@ def ask_question():
         else:
             previous_questions = []
 
-        # Split document into chunks
+        document_text = document['extracted_text']
+
+        if is_suggestion:
+            # Use a larger chunk or the whole doc (truncated)
+            doc_content = safe_truncate(document_text, max_chars=12000)
+            system_prompt = (
+                "You are an expert assistant. Based on the following document content, "
+                "provide actionable suggestions, recommendations, or ideas to help the user accomplish their task. "
+                "Be specific and practical.\n\n"
+                f"Document Content:\n{doc_content}\n"
+            )
+            messages = [{
+                "role": "system",
+                "content": system_prompt
+            }]
+            for qa in previous_questions:
+                messages.append({
+                    "role": "user",
+                    "content": qa['question']
+                })
+                messages.append({
+                    "role": "assistant",
+                    "content": qa['answer']
+                })
+            messages.append({
+                "role": "user",
+                "content": question
+            })
+
+            response = call_groq_with_messages(
+                messages=messages,
+                max_tokens=1500
+            )
+            fallback_triggers = [
+                "i don't know.", "i don't know", "not found in the document.",
+                "not found in the document", "", None
+            ]
+            if not response or response.strip().lower() in fallback_triggers:
+                # fallback to external API
+                fallback_messages = [
+                    {"role": "system", "content": "You're a helpful assistant. Answer the user's question as best as you can."},
+                    {"role": "user", "content": question}
+                ]
+                fallback_response = call_groq_with_messages(
+                    messages=fallback_messages,
+                    max_tokens=1500
+                )
+                final_response = (
+                    "The question you asked is not available in the document, but in case you need info, here it is:\n\n"
+                    f"{fallback_response}"
+                )
+                db.execute(
+                    'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
+                    (current_user.id, question, final_response)
+                )
+                db.commit()
+                db.close()
+                return jsonify({
+                    "answer": final_response,
+                    "model": app.config['MODEL'],
+                    "context_used": False,
+                    "source": "external"
+                })
+            # If answer found
+            db.execute(
+                'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
+                (current_user.id, question, response)
+            )
+            db.commit()
+            db.close()
+            return jsonify({
+                "answer": response,
+                "model": app.config['MODEL'],
+                "context_used": use_context,
+                "source": "document"
+            })
+
+        # ...existing chunked Q&A logic for non-suggestion questions...
         chunks = chunk_text(document['extracted_text'])
         answer_found = None
         for chunk in chunks:
@@ -672,7 +737,7 @@ def serve_template(template_name):
         return "Template not found", 404
     return render_template(template_name)
 
-def safe_truncate(text, max_chars=6000):
+def safe_truncate(text, max_chars=12000):
     return text[:max_chars] + ("..." if len(text) > max_chars else "")
 
 def chunk_text(text, chunk_size=3000, overlap=200):
