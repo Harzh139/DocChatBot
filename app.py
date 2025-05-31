@@ -17,13 +17,19 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 from functools import wraps
 import subprocess
+
+# Debug: Check for poppler and tesseract
 try:
     out = subprocess.check_output(['which', 'pdftoppm'])
     print("pdftoppm found at:", out.decode().strip())
 except Exception as e:
     print("pdftoppm not found:", e)
+try:
+    out = subprocess.check_output(['which', 'tesseract'])
+    print("tesseract found at:", out.decode().strip())
+except Exception as e:
+    print("tesseract not found:", e)
 
-os.system("apt-get update && apt-get install -y poppler-utils")
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'supersecret')
 app.config.update({
@@ -40,6 +46,7 @@ app.config.update({
     'GROQ_API_URL': 'https://api.groq.com/openai/v1/chat/completions'
 })
 print("GROQ_API_KEY loaded:", repr(app.config['GROQ_API_KEY']))
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -124,7 +131,6 @@ def extract_text_from_file(filepath):
             if not text.strip():
                 try:
                     from pdf2image import convert_from_path
-                    import pytesseract
                     images = convert_from_path(filepath)
                     ocr_text = []
                     for img in images:
@@ -146,10 +152,11 @@ def extract_text_from_file(filepath):
             if filepath.endswith('.csv'):
                 df = pd.read_csv(filepath)
             else:
-                df = pd.read_excel(filepath)
+                # Use openpyxl for .xlsx files
+                df = pd.read_excel(filepath, engine='openpyxl')
             analysis = []
             analysis.append(f"Shape: {df.shape[0]} rows, {df.shape[1]} columns")
-            analysis.append(f"Columns: {', '.join(df.columns)}")
+            analysis.append(f"Columns: {', '.join(map(str, df.columns))}")
             analysis.append("\nColumn Types:")
             analysis.append(str(df.dtypes))
             analysis.append("\nMissing Values per Column:")
@@ -394,48 +401,57 @@ def ask_question():
         else:
             previous_questions = []
 
-        # Build the prompt
-        if is_suggestion:
-            system_prompt = (
-                "You are an expert assistant. Based on the following document content, "
-                "provide actionable suggestions, recommendations, or ideas to help the user accomplish their task. "
-                "Be specific and practical.\n\n"
-                f"Document Content:\n{document['extracted_text']}\n"
-            )
-        else:
-            system_prompt = (
-                "You're an expert document analyst. Answer questions based strictly on the provided document content.\n"
-                f"Current Document Content:\n{document['extracted_text']}\n"
-                "If the answer is not in the document, say \"I don't know.\"."
-            )
+        # Split document into chunks
+        chunks = chunk_text(document['extracted_text'])
+        answer_found = None
+        for chunk in chunks:
+            doc_content = chunk
+            if is_suggestion:
+                system_prompt = (
+                    "You are an expert assistant. Based on the following document content, "
+                    "provide actionable suggestions, recommendations, or ideas to help the user accomplish their task. "
+                    "Be specific and practical.\n\n"
+                    f"Document Content:\n{doc_content}\n"
+                )
+            else:
+                system_prompt = (
+                    "You're an expert document analyst. Answer questions based strictly on the provided document content.\n"
+                    f"Current Document Content:\n{doc_content}\n"
+                    "If the answer is not in the document, say \"I don't know.\"."
+                )
 
-        messages = [{
-            "role": "system",
-            "content": system_prompt
-        }]
-        for qa in previous_questions:
+            messages = [{
+                "role": "system",
+                "content": system_prompt
+            }]
+            for qa in previous_questions:
+                messages.append({
+                    "role": "user",
+                    "content": qa['question']
+                })
+                messages.append({
+                    "role": "assistant",
+                    "content": qa['answer']
+                })
             messages.append({
                 "role": "user",
-                "content": qa['question']
+                "content": question
             })
-            messages.append({
-                "role": "assistant",
-                "content": qa['answer']
-            })
-        messages.append({
-            "role": "user",
-            "content": question
-        })
 
-        response = call_groq_with_messages(
-            messages=messages,
-            max_tokens=1500
-        )
-        fallback_triggers = [
-            "i don't know.", "i don't know", "not found in the document.",
-            "not found in the document", "", None
-        ]
-        if response is None or response.strip().lower() in fallback_triggers:
+            response = call_groq_with_messages(
+                messages=messages,
+                max_tokens=1500
+            )
+            fallback_triggers = [
+                "i don't know.", "i don't know", "not found in the document.",
+                "not found in the document", "", None
+            ]
+            if response and response.strip().lower() not in fallback_triggers:
+                answer_found = response
+                break
+
+        # If answer not found in any chunk, fallback to external API
+        if not answer_found:
             fallback_messages = [
                 {"role": "system", "content": "You're a helpful assistant. Answer the user's question as best as you can."},
                 {"role": "user", "content": question}
@@ -444,44 +460,32 @@ def ask_question():
                 messages=fallback_messages,
                 max_tokens=1500
             )
-            if (
-                fallback_response is None or
-                fallback_response.strip() == "" or
-                fallback_response.strip().lower() in fallback_triggers
-            ):
-                friendly_msg = "Sorry, I couldn't understand your question. Could you please rephrase it or ask more clearly?"
-                db.execute(
-                    'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
-                    (current_user.id, question, friendly_msg)
-                )
-                db.commit()
-                db.close()
-                return jsonify({
-                    "answer": friendly_msg,
-                    "model": app.config['MODEL'],
-                    "context_used": False,
-                    "source": "fallback"
-                })
+            final_response = (
+                "The question you asked is not available in the document, but in case you need info, here it is:\n\n"
+                f"{fallback_response}"
+            )
             db.execute(
                 'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
-                (current_user.id, question, fallback_response)
+                (current_user.id, question, final_response)
             )
             db.commit()
             db.close()
             return jsonify({
-                "answer": fallback_response,
+                "answer": final_response,
                 "model": app.config['MODEL'],
                 "context_used": False,
                 "source": "external"
             })
+
+        # If answer found in a chunk
         db.execute(
             'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
-            (current_user.id, question, response)
+            (current_user.id, question, answer_found)
         )
         db.commit()
         db.close()
         return jsonify({
-            "answer": response,
+            "answer": answer_found,
             "model": app.config['MODEL'],
             "context_used": use_context,
             "source": "document"
@@ -664,7 +668,17 @@ def serve_template(template_name):
         return "Template not found", 404
     return render_template(template_name)
 
+def safe_truncate(text, max_chars=6000):
+    return text[:max_chars] + ("..." if len(text) > max_chars else "")
 
+def chunk_text(text, chunk_size=3000, overlap=200):
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = min(start + chunk_size, len(text))
+        chunks.append(text[start:end])
+        start += chunk_size - overlap
+    return chunks
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
