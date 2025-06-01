@@ -141,30 +141,36 @@ def extract_text_from_file(filepath):
             return f.read()
     elif filepath.endswith('.csv') or filepath.endswith('.xlsx'):
         try:
+            max_rows = 1000
             if filepath.endswith('.csv'):
-                df = pd.read_csv(filepath)
+                df = pd.read_csv(filepath, nrows=max_rows)
             else:
-                # Use openpyxl for .xlsx files
-                df = pd.read_excel(filepath, engine='openpyxl')
+                df = pd.read_excel(filepath, engine='openpyxl', nrows=max_rows)
             analysis = []
-            analysis.append(f"Shape: {df.shape[0]} rows, {df.shape[1]} columns")
+            analysis.append(f"Shape (sampled): {df.shape[0]} rows, {df.shape[1]} columns (showing up to {max_rows} rows)")
             analysis.append(f"Columns: {', '.join(map(str, df.columns))}")
             analysis.append("\nColumn Types:")
             analysis.append(str(df.dtypes))
+            analysis.append("\nSample Data (first 5 rows):")
+            analysis.append(str(df.head(5)))
             analysis.append("\nMissing Values per Column:")
             analysis.append(str(df.isnull().sum()))
-            outlier_report = []
-            for col in df.select_dtypes(include=[np.number]).columns:
-                q1 = df[col].quantile(0.25)
-                q3 = df[col].quantile(0.75)
-                iqr = q3 - q1
-                lower = q1 - 1.5 * iqr
-                upper = q3 + 1.5 * iqr
-                outliers = df[(df[col] < lower) | (df[col] > upper)][col]
-                outlier_report.append(f"{col}: {len(outliers)} outliers")
-            if outlier_report:
-                analysis.append("\nOutlier Report:")
-                analysis.extend(outlier_report)
+            # Only do outlier analysis if file is not too big
+            if df.shape[0] <= max_rows:
+                outlier_report = []
+                for col in df.select_dtypes(include=[np.number]).columns:
+                    q1 = df[col].quantile(0.25)
+                    q3 = df[col].quantile(0.75)
+                    iqr = q3 - q1
+                    lower = q1 - 1.5 * iqr
+                    upper = q3 + 1.5 * iqr
+                    outliers = df[(df[col] < lower) | (df[col] > upper)][col]
+                    outlier_report.append(f"{col}: {len(outliers)} outliers")
+                if outlier_report:
+                    analysis.append("\nOutlier Report:")
+                    analysis.extend(outlier_report)
+            else:
+                analysis.append("\nOutlier analysis skipped for large files.")
             return '\n'.join(analysis)
         except Exception as e:
             return f"Error reading data file: {str(e)}"
