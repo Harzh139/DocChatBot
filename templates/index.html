@@ -725,7 +725,7 @@
 
         .toggle-history-btn {
             position: absolute;
-            top: 50px;
+            top: 60px;
             left: 320px;
             z-index: 101;
             background: #007bff;
@@ -739,10 +739,10 @@
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,123,255,0.13);
-            transition: left 0.3s, background 0.2s;
+            transition: left 0.3s cubic-bezier(.4,2,.6,1), background 0.2s;
         }
         .toggle-history-btn.collapsed {
-            left: 0;
+            left: 10px;
             background: #28a745;
         }
         .toggle-history-btn i {
@@ -1044,7 +1044,6 @@
         const toggleHistoryBtn = document.getElementById('toggle-history');
         const sidePanel = document.getElementById('side-panel');
         const mainContainer = document.getElementById('main-container');
-        let isHistoryVisible = true;
 
         toggleHistoryBtn.addEventListener('click', () => {
             sidePanel.classList.toggle('collapsed');
