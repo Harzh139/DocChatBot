@@ -681,6 +681,38 @@
             background: linear-gradient(135deg, #c3ecff, #f6f6ff);
             min-width: 0;
         }
+
+        #user-info-bar {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+            padding: 10px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 200;
+        }
+        #user-info-bar p {
+            margin: 0;
+            font-weight: 500;
+            color: #222;
+        }
+        #logout-btn-top {
+            padding: 7px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.98em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #logout-btn-top:hover {
+            background: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -776,6 +808,12 @@
         </div>
     </div>
 
+    <!-- User Info Bar (Top Right) -->
+    <div id="user-info-bar" class="user-info hidden">
+        <p>👤 <span id="username-display"></span></p>
+        <button id="logout-btn-top">Logout</button>
+    </div>
+
     <script>
     // DOM Elements
     const fileInput = document.getElementById('file-input');
@@ -794,6 +832,9 @@
     const registerForm = document.getElementById('register');
     const showRegisterLink = document.getElementById('show-register');
     const showLoginLink = document.getElementById('show-login');
+    const userInfoBar = document.getElementById('user-info-bar');
+    const usernameDisplay = document.getElementById('username-display');
+    const logoutBtnTop = document.getElementById('logout-btn-top');
     //const userInfo = document.getElementById('user-info');
     //const usernameDisplay = document.getElementById('username-display');
     const logoutBtn = document.getElementById('logout-btn');
@@ -915,6 +956,20 @@
                 console.error('Logout error:', err);
             }
         });
+
+        logoutBtnTop.addEventListener('click', async () => {
+            try {
+                await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                currentUsername = null;
+                updateUIAfterAuth();
+                resetAppState();
+            } catch (err) {
+                console.error('Logout error:', err);
+            }
+        });
     });
     
     // Check authentication status
@@ -946,30 +1001,23 @@
     // Update UI after authentication changes
     function updateUIAfterAuth() {
         if (currentUsername) {
-            // User is logged in
             authContainer.classList.add('hidden');
-            //userInfo.classList.remove('hidden');
             appContent.classList.remove('hidden');
-            //usernameDisplay.textContent = currentUsername;
-            // Load chat history
-            loadChatHistoryList(); // <-- Use this instead of loadChatHistory
+            userInfoBar.classList.remove('hidden');
+            usernameDisplay.textContent = currentUsername;
+            loadChatHistoryList();
         } else {
-            // User is logged out
             authContainer.classList.remove('hidden');
-            //userInfo.classList.add('hidden');
             appContent.classList.add('hidden');
-            // Clear forms
+            userInfoBar.classList.add('hidden');
             loginForm.reset();
             registerForm.reset();
             loginError.textContent = '';
             registerError.textContent = '';
             registerSuccess.textContent = '';
-            // Show login form by default
             document.getElementById('login-form').classList.remove('hidden');
             document.getElementById('register-form').classList.add('hidden');
         }
-
-        // Menu visibility
         updateMenuVisibility();
     }
     
@@ -1302,9 +1350,6 @@
             const response = await fetch('/upload_link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ url })
-            });
             const result = await response.json();
             if (response.ok) {
                 currentFile = url; // Mark as "uploaded"
@@ -1313,15 +1358,15 @@
                 askBtn.disabled = false;
                 questionInput.focus();
                 // Use the page title if available, else fallback to url
-                const displayTitle = result.page_title || url;
+                const displayTitle = result.page_title || url;ingify({ url })
                 addMessage(`Hey ${currentUsername}, you have uploaded the article "${displayTitle}". Ask me anything about it!`, 'bot');
             } else {
                 linkStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.error || 'Failed to analyze link.'}`;
-            }
-        } catch (error) {
+            }rk as "uploaded"
+        } catch (error) { `<i class="fas fa-check-circle"></i> Link analyzed! Ask me anything about it.`;
             linkStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${error.message}`;
         }
     });
-    </script>
+    </script>se the page title if available, else fallback to url
 </body>
 </html>
