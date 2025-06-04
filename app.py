@@ -367,6 +367,8 @@ def upload_link():
     except Exception as e:
         return jsonify({"error": f"Error processing link: {str(e)}"}), 500
 
+
+
 @app.route('/ask', methods=['POST'])
 @login_required_json
 def ask_question():
@@ -402,7 +404,6 @@ def ask_question():
         document_text = document['extracted_text']
 
         if is_suggestion:
-            # Use a larger chunk or the whole doc (truncated)
             doc_content = safe_truncate(document_text, max_chars=12000)
             system_prompt = (
                 "You are an expert assistant. Based on the following document content, "
@@ -436,8 +437,10 @@ def ask_question():
                 "i don't know.", "i don't know", "not found in the document.",
                 "not found in the document", "", None
             ]
-            if not response or response.strip().lower() in fallback_triggers:
-                # fallback to external API
+            # --- Fallback if answer is too short or generic ---
+            if (not response or 
+                response.strip().lower() in fallback_triggers or 
+                len(response.strip()) < 30):
                 fallback_messages = [
                     {"role": "system", "content": "You're a helpful assistant. Answer the user's question as best as you can."},
                     {"role": "user", "content": question}
@@ -490,7 +493,7 @@ def ask_question():
                 )
             else:
                 system_prompt = (
-                    "You're an expert document analyst. Answer questions based strictly on the provided document content.\n"
+                    "You're an expert document analyst. Answer questions strictly based on the provided document content.\n"
                     f"Current Document Content:\n{doc_content}\n"
                     "If the answer is not in the document, say \"I don't know.\"."
                 )
@@ -521,11 +524,14 @@ def ask_question():
                 "i don't know.", "i don't know", "not found in the document.",
                 "not found in the document", "", None
             ]
-            if response and response.strip().lower() not in fallback_triggers:
+            # --- Fallback if answer is too short or generic ---
+            if (response and 
+                response.strip().lower() not in fallback_triggers and 
+                len(response.strip()) >= 30):
                 answer_found = response
                 break
 
-        # If answer not found in any chunk, fallback to external API
+        # If answer not found in any chunk, or answer is too short/generic, fallback to external API
         if not answer_found:
             fallback_messages = [
                 {"role": "system", "content": "You're a helpful assistant. Answer the user's question as best as you can."},
@@ -570,6 +576,8 @@ def ask_question():
             "error": str(e),
             "solution": "Please try again later"
         }), 500
+
+
 
 @app.route('/download/text', methods=['GET'])
 @login_required
