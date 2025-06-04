@@ -722,13 +722,45 @@
         #logout-btn-top:hover {
             background: #c82333;
         }
+
+        .toggle-history-btn {
+            position: absolute;
+            top: 50px;
+            left: 320px;
+            z-index: 101;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.13);
+            transition: left 0.3s, background 0.2s;
+        }
+        .toggle-history-btn.collapsed {
+            left: 0;
+            background: #28a745;
+        }
+        .toggle-history-btn i {
+            transition: transform 0.3s;
+        }
+        .side-panel.collapsed {
+            display: none;
+        }
+        .main-container.history-collapsed .chat-panel {
+            border-radius: 18px;
+        }
     </style>
 </head>
 <body>
 <div id="app-content" class="app-content hidden">
     <div class="main-container">
         <!-- Left Panel: Upload & History -->
-        <div class="side-panel">
+        <div class="side-panel" id="side-panel">
             <div id="upload-area">
                 <label for="file-input" class="upload-btn">
                     <i class="fas fa-upload"></i> Choose Document
@@ -763,69 +795,73 @@
     </div>
 </div>
 
-    <!-- Authentication Container -->
-    <div id="auth-container" class="auth-container">
-        <div id="login-form" class="auth-form">
-            <h2>Login</h2>
-            <form id="login">
-                <input type="text" id="login-username" placeholder="Username" required>
-                <input type="password" id="login-password" placeholder="Password" required>
-                <button type="submit">Login</button>
-                <div id="login-error" class="error-message"></div>
-            </form>
-            <div class="auth-toggle">
-                Don't have an account? <a href="#" id="show-register">Register</a>
-            </div>
-        </div>
-        
-        <div id="register-form" class="auth-form hidden">
-            <h2>Register</h2>
-            <form id="register">
-                <input type="text" id="register-username" placeholder="Username" required>
-                <input type="email" id="register-email" placeholder="Email" required>
-                <input type="password" id="register-password" placeholder="Password" required>
-                <button type="submit">Register</button>
-                <div id="register-error" class="error-message"></div>
-                <div id="register-success" class="success-message"></div>
-            </form>
-            <div class="auth-toggle">
-                Already have an account? <a href="#" id="show-login">Login</a>
-            </div>
+<!-- Authentication Container -->
+<div id="auth-container" class="auth-container">
+    <div id="login-form" class="auth-form">
+        <h2>Login</h2>
+        <form id="login">
+            <input type="text" id="login-username" placeholder="Username" required>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <button type="submit">Login</button>
+            <div id="login-error" class="error-message"></div>
+        </form>
+        <div class="auth-toggle">
+            Don't have an account? <a href="#" id="show-register">Register</a>
         </div>
     </div>
     
-
-    <!-- Hamburger menu for user actions -->
-    <div class="menu-container hidden" id="menu-container">
-        <button class="menu-btn" id="menu-btn" title="Menu">
-            <i class="fas fa-bars"></i>
-        </button>
-        <div class="menu-dropdown" id="menu-dropdown">
-            <a href="/download/text?format=txt" class="menu-item" title="Download Extracted Text as TXT">
-                <i class="fas fa-file-alt"></i> Text as TXT
-            </a>
-            <a href="/download/text?format=pdf" class="menu-item" title="Download Extracted Text as PDF">
-                <i class="fas fa-file-pdf"></i> Text as PDF
-            </a>
-            <a href="/download/chat?format=txt" class="menu-item" title="Download Chat History as TXT">
-                <i class="fas fa-comments"></i> Chat as TXT
-            </a>
-            <a href="/download/chat?format=pdf" class="menu-item" title="Download Chat History as PDF">
-                <i class="fas fa-comments"></i> Chat as PDF
-            </a>
-            <button id="logout-btn" class="menu-item logout-btn">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
+    <div id="register-form" class="auth-form hidden">
+        <h2>Register</h2>
+        <form id="register">
+            <input type="text" id="register-username" placeholder="Username" required>
+            <input type="email" id="register-email" placeholder="Email" required>
+            <input type="password" id="register-password" placeholder="Password" required>
+            <button type="submit">Register</button>
+            <div id="register-error" class="error-message"></div>
+            <div id="register-success" class="success-message"></div>
+        </form>
+        <div class="auth-toggle">
+            Already have an account? <a href="#" id="show-login">Login</a>
         </div>
     </div>
+</div>
 
-    <!-- User Info Bar (Top Right) -->
-    <div id="user-info-bar" class="user-info hidden">
-        <p>👤 <span id="username-display"></span></p>
-        <button id="logout-btn-top">Logout</button>
+<!-- Hamburger menu for user actions -->
+<div class="menu-container hidden" id="menu-container">
+    <button class="menu-btn" id="menu-btn" title="Menu">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="menu-dropdown" id="menu-dropdown">
+        <a href="/download/text?format=txt" class="menu-item" title="Download Extracted Text as TXT">
+            <i class="fas fa-file-alt"></i> Text as TXT
+        </a>
+        <a href="/download/text?format=pdf" class="menu-item" title="Download Extracted Text as PDF">
+            <i class="fas fa-file-pdf"></i> Text as PDF
+        </a>
+        <a href="/download/chat?format=txt" class="menu-item" title="Download Chat History as TXT">
+            <i class="fas fa-comments"></i> Chat as TXT
+        </a>
+        <a href="/download/chat?format=pdf" class="menu-item" title="Download Chat History as PDF">
+            <i class="fas fa-comments"></i> Chat as PDF
+        </a>
+        <button id="logout-btn" class="menu-item logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
     </div>
+</div>
 
-    <script>
+<!-- User Info Bar (Top Right) -->
+<div id="user-info-bar" class="user-info hidden">
+    <p>👤 <span id="username-display"></span></p>
+    <button id="logout-btn-top">Logout</button>
+</div>
+
+<!-- Toggle History Button -->
+<button id="toggle-history" class="toggle-history-btn" title="Show/Hide History">
+    <i class="fas fa-chevron-left"></i>
+</button>
+
+<script>
     // DOM Elements
     const fileInput = document.getElementById('file-input');
     const uploadArea = document.getElementById('upload-area');
@@ -833,10 +869,7 @@
     const chatbox = document.getElementById('chatbox');
     const questionInput = document.getElementById('question-input');
     const askBtn = document.getElementById('ask-btn');
-    const clearHistoryBtn = document.getElementById('clear-history-btn');
-    const loadHistoryBtn = document.getElementById('load-history-btn');
     const useContextCheckbox = document.getElementById('use-context');
-    
     // Auth elements
     const authContainer = document.getElementById('auth-container');
     const loginForm = document.getElementById('login');
@@ -846,101 +879,74 @@
     const userInfoBar = document.getElementById('user-info-bar');
     const usernameDisplay = document.getElementById('username-display');
     const logoutBtnTop = document.getElementById('logout-btn-top');
-    //const userInfo = document.getElementById('user-info');
-    //const usernameDisplay = document.getElementById('username-display');
     const logoutBtn = document.getElementById('logout-btn');
     const appContent = document.getElementById('app-content');
-    
     // Login error elements
     const loginError = document.getElementById('login-error');
     const registerError = document.getElementById('register-error');
     const registerSuccess = document.getElementById('register-success');
-    
     // App state
     let currentFile = null;
     let isBotTyping = false;
     let currentUsername = null;
 
-    // Initialize the app
     document.addEventListener('DOMContentLoaded', () => {
-        // Check if user is already logged in
         checkAuth();
-        
-        // Set up auth form toggles
+
+        // Auth form toggles
         showRegisterLink.addEventListener('click', (e) => {
             e.preventDefault();
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('register-form').classList.remove('hidden');
         });
-        
         showLoginLink.addEventListener('click', (e) => {
             e.preventDefault();
             document.getElementById('register-form').classList.add('hidden');
             document.getElementById('login-form').classList.remove('hidden');
         });
-        
-        // Set up login form
+
+        // Login form
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
-    
             try {
                 const response = await fetch('/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include', // Important for cookies
-                    body: JSON.stringify({
-                        username,
-                        password
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
                 });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            // Successfully logged in
-            currentUsername = username;
-            updateUIAfterAuth();
-        } else {
-            loginError.textContent = data.error || 'Login failed';
-        }
-    } catch (err) {
-        loginError.textContent = 'Network error. Please try again.';
-    }
-});
-        
-        // Set up register form
+                const data = await response.json();
+                if (response.ok) {
+                    currentUsername = username;
+                    updateUIAfterAuth();
+                } else {
+                    loginError.textContent = data.error || 'Login failed';
+                }
+            } catch (err) {
+                loginError.textContent = 'Network error. Please try again.';
+            }
+        });
+
+        // Register form
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('register-username').value;
             const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
-            
             try {
                 const response = await fetch('/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({
-                        username,
-                        email,
-                        password
-                    })
+                    body: JSON.stringify({ username, email, password })
                 });
-                
                 if (response.ok) {
-                    // Successfully registered
                     registerError.textContent = '';
                     registerSuccess.textContent = 'Registration successful! Please login.';
-                    // Switch to login form
                     document.getElementById('register-form').classList.add('hidden');
                     document.getElementById('login-form').classList.remove('hidden');
-                    // Clear form
                     registerForm.reset();
                 } else {
                     const error = await response.json();
@@ -950,24 +956,21 @@
                 registerError.textContent = 'Network error. Please try again.';
             }
         });
-        
-        // Set up logout
+
+        // Logout
         logoutBtn.addEventListener('click', async () => {
             try {
                 await fetch('/logout', {
                     method: 'POST',
                     credentials: 'include'
                 });
-                
                 currentUsername = null;
                 updateUIAfterAuth();
-                // Clear any app state
                 resetAppState();
             } catch (err) {
                 console.error('Logout error:', err);
             }
         });
-
         logoutBtnTop.addEventListener('click', async () => {
             try {
                 await fetch('/logout', {
@@ -981,34 +984,106 @@
                 console.error('Logout error:', err);
             }
         });
-    });
-    
-    // Check authentication status
-    async function checkAuth() {
-    try {
-        const response = await fetch('/api/check_auth', {
-            credentials: 'include'
+
+        // File upload
+        fileInput.addEventListener('change', handleFileUpload);
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('highlight');
         });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.authenticated) {
-                currentUsername = data.username;
-                updateUIAfterAuth();
-                return true;
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('highlight');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('highlight');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileUpload();
+            }
+        });
+
+        // Menu
+        const menuContainer = document.getElementById('menu-container');
+        const menuBtn = document.getElementById('menu-btn');
+        const menuDropdown = document.getElementById('menu-dropdown');
+        function updateMenuVisibility() {
+            if (currentUsername) {
+                menuContainer.classList.remove('hidden');
+            } else {
+                menuContainer.classList.add('hidden');
+                menuDropdown.style.display = 'none';
             }
         }
-        // Not logged in
-        authContainer.classList.remove('hidden');
-        userInfo.classList.add('hidden');
-        appContent.classList.add('hidden');
-        return false;
-    } catch (err) {
-        console.error('Auth check error:', err);
-        return false;
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menuDropdown.style.display = menuDropdown.style.display === 'block' ? 'none' : 'block';
+        });
+        document.addEventListener('click', () => {
+            menuDropdown.style.display = 'none';
+        });
+        document.querySelectorAll('.logout-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    await fetch('/logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    currentUsername = null;
+                    updateUIAfterAuth();
+                    resetAppState();
+                } catch (err) {
+                    console.error('Logout error:', err);
+                }
+            });
+        });
+
+        // Toggle history button
+        const toggleHistoryBtn = document.getElementById('toggle-history');
+        const sidePanel = document.getElementById('side-panel');
+        const mainContainer = document.getElementById('main-container');
+        let isHistoryVisible = true;
+
+        toggleHistoryBtn.addEventListener('click', () => {
+            sidePanel.classList.toggle('collapsed');
+            mainContainer.classList.toggle('history-collapsed');
+            toggleHistoryBtn.classList.toggle('collapsed');
+            // Change chevron direction
+            const icon = toggleHistoryBtn.querySelector('i');
+            if (sidePanel.classList.contains('collapsed')) {
+                icon.classList.remove('fa-chevron-left');
+                icon.classList.add('fa-chevron-right');
+            } else {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-left');
+            }
+        });
+    });
+
+    // Check authentication status
+    async function checkAuth() {
+        try {
+            const response = await fetch('/api/check_auth', { credentials: 'include' });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.authenticated) {
+                    currentUsername = data.username;
+                    updateUIAfterAuth();
+                    return true;
+                }
+            }
+            authContainer.classList.remove('hidden');
+            userInfoBar.classList.add('hidden');
+            appContent.classList.add('hidden');
+            return false;
+        } catch (err) {
+            console.error('Auth check error:', err);
+            return false;
+        }
     }
-}
-    
+
     // Update UI after authentication changes
     function updateUIAfterAuth() {
         if (currentUsername) {
@@ -1031,7 +1106,7 @@
         }
         updateMenuVisibility();
     }
-    
+
     // Reset app state when logging out
     function resetAppState() {
         currentFile = null;
@@ -1041,27 +1116,20 @@
         questionInput.disabled = true;
         askBtn.disabled = true;
     }
-    
-    // Improved typing effect with bullet point support
+
+    // Typing effect
     function typeResponse(element, text, delay = 20) {
         let i = 0;
         let isInBullet = false;
-        
         function type() {
             if (i < text.length) {
-                // Handle bullet points and line breaks
                 if (text[i] === '\n' && !isInBullet) {
                     element.innerHTML += '<br>';
                     i++;
-                } 
-                // Special handling for bullet emojis
-                else if (text.substr(i, 2) === '🔹' || 
-                         text.substr(i, 2) === '✅' || 
-                         text.substr(i, 2) === '📌') {
+                } else if (text.substr(i, 2) === '🔹' || text.substr(i, 2) === '✅' || text.substr(i, 2) === '📌') {
                     element.innerHTML += text.substr(i, 2) + ' ';
                     i += 2;
-                }
-                else {
+                } else {
                     element.innerHTML += text[i];
                     i++;
                 }
@@ -1090,28 +1158,22 @@
         chatbox.appendChild(msg);
 
         if (sender === 'bot') {
-            // Show typing indicator first
             isBotTyping = true;
             const typingIndicator = createTypingIndicator();
-            
-            // After a small delay, start typing the response
             setTimeout(() => {
                 chatbox.removeChild(typingIndicator);
                 isBotTyping = false;
                 typeResponse(msg, text);
                 chatbox.scrollTop = chatbox.scrollHeight;
-            }, 500); // Short delay before typing starts
+            }, 500);
         } else {
             msg.textContent = text;
             chatbox.scrollTop = chatbox.scrollHeight;
         }
     }
 
-    fileInput.addEventListener('change', handleFileUpload);
-
     async function handleFileUpload() {
         if (!fileInput.files.length) return;
-
         const file = fileInput.files[0];
         const allowedExtensions = ['pdf', 'docx', 'txt', 'csv', 'xlsx'];
         const fileExt = file.name.split('.').pop().toLowerCase();
@@ -1119,23 +1181,18 @@
             status.textContent = '❌ Invalid file type. Please upload PDF, DOCX, TXT, CSV, or XLSX.';
             return;
         }
-
         const formData = new FormData();
         formData.append('file', file);
-
         try {
             status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
             askBtn.disabled = true;
             questionInput.disabled = true;
-
             const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData,
-                credentials: 'include' // Important for sessions
+                credentials: 'include'
             });
-
             const result = await response.json();
-
             if (response.ok) {
                 currentFile = file.name;
                 status.innerHTML = `<i class="fas fa-check-circle"></i> <strong>${file.name}</strong> ready for questions!`;
@@ -1154,87 +1211,35 @@
     async function askQuestion() {
         const question = questionInput.value.trim();
         if (!question || !currentFile) return;
-
         addMessage(question, 'user');
         questionInput.value = '';
         askBtn.disabled = true;
         questionInput.disabled = true;
-
-        // Create typing indicator before sending the request
         const typingIndicator = createTypingIndicator();
         chatbox.appendChild(typingIndicator);
         chatbox.scrollTop = chatbox.scrollHeight;
-
         try {
             const response = await fetch('/ask', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    question,
-                    use_context: useContextCheckbox.checked
-                }),
-                credentials: 'include' // Important for sessions
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question, use_context: useContextCheckbox.checked }),
+                credentials: 'include'
             });
-
             const result = await response.json();
-
-            // Remove typing indicator after receiving the response
             chatbox.removeChild(typingIndicator);
-
             if (response.ok) {
                 addMessage(result.answer, 'bot');
-                loadChatHistoryList(); // <-- reload history after new Q&A
+                loadChatHistoryList();
             } else {
                 addMessage(`Error: ${result.error || 'Failed to get answer'}`, 'bot');
             }
         } catch (error) {
-            // Remove typing indicator in case of error
             chatbox.removeChild(typingIndicator);
             addMessage(`Error: ${error.message}`, 'bot');
         } finally {
             askBtn.disabled = false;
             questionInput.disabled = false;
             questionInput.focus();
-        }
-    }
-
-    // Load chat history from server
-    async function loadChatHistory() {
-        try {
-            const response = await fetch('/chat/history?limit=10', {
-                credentials: 'include' // Important for sessions
-            });
-            const data = await response.json();
-            
-            if (response.ok && data.chats && data.chats.length > 0) {
-                // Clear current chat
-                chatbox.innerHTML = '';
-                
-                // Add each message to the chat (in reverse order)
-                data.chats.reverse().forEach(msg => {
-                    addMessage(msg.question, 'user');
-                    addMessage(msg.answer, 'bot');
-                });
-            }
-        } catch (error) {
-            console.error('Error loading chat history:', error);
-        }
-    }
-
-    // Clear chat history on server and locally
-    async function clearChatHistory() {
-        try {
-            await fetch('/chat/clear', {
-                method: 'POST',
-                credentials: 'include' // Important for sessions
-            });
-            chatbox.innerHTML = '';
-            addMessage("Chat history has been cleared.", 'bot');
-        } catch (error) {
-            console.error('Error clearing chat history:', error);
-            addMessage("Failed to clear chat history.", 'bot');
         }
     }
 
@@ -1254,7 +1259,6 @@
                         chatbox.innerHTML = '';
                         addMessage(chat.question, 'user');
                         addMessage(chat.answer, 'bot');
-                        // Highlight selected
                         document.querySelectorAll('#history-list li').forEach(el => el.classList.remove('active'));
                         li.classList.add('active');
                     };
@@ -1268,86 +1272,20 @@
         }
     }
 
-    // Call this after login and after sending a new question
     // Event listeners
     askBtn.addEventListener('click', askQuestion);
     questionInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !askBtn.disabled) askQuestion();
     });
-    
-    clearHistoryBtn.addEventListener('click', clearChatHistory);
-    loadHistoryBtn.addEventListener('click', loadChatHistoryList);
-    
-    // Drag and drop functionality
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('highlight');
-    });
 
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('highlight');
-    });
+    // Drag and drop functionality already handled above
 
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('highlight');
-        if (e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            handleFileUpload();
-        }
-    });
-
-    const allowedExtensions = ['pdf', 'docx', 'txt', 'csv', 'xlsx'];
-
-    // Menu functionality
-    const menuContainer = document.getElementById('menu-container');
-    const menuBtn = document.getElementById('menu-btn');
-    const menuDropdown = document.getElementById('menu-dropdown');
-
-    // Show menu only when logged in
-    function updateMenuVisibility() {
-        if (currentUsername) {
-            menuContainer.classList.remove('hidden');
-        } else {
-            menuContainer.classList.add('hidden');
-            menuDropdown.style.display = 'none';
-        }
-    }
-
-    // Toggle dropdown
-    menuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        menuDropdown.style.display = menuDropdown.style.display === 'block' ? 'none' : 'block';
-    });
-
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', () => {
-        menuDropdown.style.display = 'none';
-    });
-
-    // Logout from menu
-    document.querySelectorAll('.logout-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            try {
-                await fetch('/logout', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                
-                currentUsername = null;
-                updateUIAfterAuth();
-                // Clear any app state
-                resetAppState();
-            } catch (err) {
-                console.error('Logout error:', err);
-            }
-        });
-    });
-
+    // Link upload (if you have a link upload area)
+    // Uncomment and implement if needed
+    /*
     const linkInput = document.getElementById('link-input');
     const linkUploadBtn = document.getElementById('link-upload-btn');
     const linkStatus = document.getElementById('link-status');
-
     linkUploadBtn.addEventListener('click', async () => {
         const url = linkInput.value.trim();
         if (!url) {
@@ -1361,23 +1299,26 @@
             const response = await fetch('/upload_link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ url })
+            });
             const result = await response.json();
             if (response.ok) {
-                currentFile = url; // Mark as "uploaded"
+                currentFile = url;
                 linkStatus.innerHTML = `<i class="fas fa-check-circle"></i> Link analyzed! Ask me anything about it.`;
                 questionInput.disabled = false;
                 askBtn.disabled = false;
                 questionInput.focus();
-                // Use the page title if available, else fallback to url
-                const displayTitle = result.page_title || url;ingify({ url })
+                const displayTitle = result.page_title || url;
                 addMessage(`Hey ${currentUsername}, you have uploaded the article "${displayTitle}". Ask me anything about it!`, 'bot');
             } else {
                 linkStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.error || 'Failed to analyze link.'}`;
-            }rk as "uploaded"
-        } catch (error) { `<i class="fas fa-check-circle"></i> Link analyzed! Ask me anything about it.`;
+            }
+        } catch (error) {
             linkStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${error.message}`;
         }
     });
-    </script>se the page title if available, else fallback to url
+    */
+</script>
 </body>
 </html>
