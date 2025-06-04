@@ -403,98 +403,27 @@ def ask_question():
 
         document_text = document['extracted_text']
 
-        if is_suggestion:
-            doc_content = safe_truncate(document_text, max_chars=12000)
-            system_prompt = (
-                "You are an expert assistant. Based on the following document content, "
-                "provide actionable suggestions, recommendations, or ideas to help the user accomplish their task. "
-                "Be specific and practical.\n\n"
-                f"Document Content:\n{doc_content}\n"
-            )
-            messages = [{
-                "role": "system",
-                "content": system_prompt
-            }]
-            for qa in previous_questions:
-                messages.append({
-                    "role": "user",
-                    "content": qa['question']
-                })
-                messages.append({
-                    "role": "assistant",
-                    "content": qa['answer']
-                })
-            messages.append({
-                "role": "user",
-                "content": question
-            })
+        fallback_triggers = [
+            "i don't know.", "i don't know", "not found in the document.",
+            "not found in the document", "", None,
+            "the document does not contain any information",
+        ]
 
-            response = call_groq_with_messages(
-                messages=messages,
-                max_tokens=1500
-            )
-            fallback_triggers = [
-                "i don't know.", "i don't know", "not found in the document.",
-                "not found in the document", "", None
-            ]
-            # --- Fallback if answer is too short or generic ---
-            if (not response or 
-                response.strip().lower() in fallback_triggers or 
-                len(response.strip()) < 30):
-                fallback_messages = [
-                    {"role": "system", "content": "You're a helpful assistant. Answer the user's question as best as you can."},
-                    {"role": "user", "content": question}
-                ]
-                fallback_response = call_groq_with_messages(
-                    messages=fallback_messages,
-                    max_tokens=1500
-                )
-                final_response = (
-                    "The question you asked is not available in the document, but in case you need info, here it is:\n\n"
-                    f"{fallback_response}"
-                )
-                db.execute(
-                    'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
-                    (current_user.id, question, final_response)
-                )
-                db.commit()
-                db.close()
-                return jsonify({
-                    "answer": final_response,
-                    "model": app.config['MODEL'],
-                    "context_used": False,
-                    "source": "external"
-                })
-            # If answer found
-            db.execute(
-                'INSERT INTO chat_history (user_id, question, answer) VALUES (?, ?, ?)',
-                (current_user.id, question, response)
-            )
-            db.commit()
-            db.close()
-            return jsonify({
-                "answer": response,
-                "model": app.config['MODEL'],
-                "context_used": use_context,
-                "source": "document"
-            })
-
-        # ...existing chunked Q&A logic for non-suggestion questions...
-        chunks = chunk_text(document['extracted_text'])
+        # --- Main chunked Q&A logic ---
+        chunks = chunk_text(document_text)
         answer_found = None
         for chunk in chunks:
-            doc_content = chunk
             if is_suggestion:
                 system_prompt = (
                     "You are an expert assistant. Based on the following document content, "
                     "provide actionable suggestions, recommendations, or ideas to help the user accomplish their task. "
                     "Be specific and practical.\n\n"
-                    f"Document Content:\n{doc_content}\n"
+                    f"Document Content:\n{chunk}\n"
                 )
             else:
                 system_prompt = (
                     "You're an expert document analyst. Answer questions strictly based on the provided document content.\n"
-                    f"Current Document Content:\n{doc_content}\n"
+                    f"Current Document Content:\n{chunk}\n"
                     "If the answer is not in the document, say \"I don't know.\"."
                 )
 
@@ -520,11 +449,7 @@ def ask_question():
                 messages=messages,
                 max_tokens=1500
             )
-            fallback_triggers = [
-                "i don't know.", "i don't know", "not found in the document.",
-                "not found in the document", "", None
-            ]
-            # --- Fallback if answer is too short or generic ---
+            # Accept only if not in fallback triggers AND long enough
             if (response and 
                 response.strip().lower() not in fallback_triggers and 
                 len(response.strip()) >= 30):
@@ -542,7 +467,8 @@ def ask_question():
                 max_tokens=1500
             )
             final_response = (
-                "The question you asked is not available in the document, but in case you need info, here it is:\n\n"
+                "The answer to your question is not available in the uploaded document, "
+                "but in case you want this information, here it is from a general source:\n\n"
                 f"{fallback_response}"
             )
             db.execute(
