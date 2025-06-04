@@ -828,6 +828,7 @@
 
 <!-- Hamburger menu for user actions -->
 <div class="menu-container hidden" id="menu-container">
+    <div class="side-panel" id="side-panel"></div>
     <button class="menu-btn" id="menu-btn" title="Menu">
         <i class="fas fa-bars"></i>
     </button>
@@ -857,7 +858,7 @@
 </div>
 
 <!-- Toggle History Button -->
-<button id="toggle-history" class="toggle-history-btn" title="Show/Hide History">
+<button id="toggle-history" class="toggle-history-btn hidden" title="Show/Hide History">
     <i class="fas fa-chevron-left"></i>
 </button>
 
@@ -1085,12 +1086,14 @@
 
     // Update UI after authentication changes
     function updateUIAfterAuth() {
+        const toggleHistoryBtn = document.getElementById('toggle-history');
         if (currentUsername) {
             authContainer.classList.add('hidden');
             appContent.classList.remove('hidden');
             userInfoBar.classList.remove('hidden');
             usernameDisplay.textContent = currentUsername;
             loadChatHistoryList();
+            toggleHistoryBtn.classList.remove('hidden'); // Show toggle button
         } else {
             authContainer.classList.remove('hidden');
             appContent.classList.add('hidden');
@@ -1102,6 +1105,7 @@
             registerSuccess.textContent = '';
             document.getElementById('login-form').classList.remove('hidden');
             document.getElementById('register-form').classList.add('hidden');
+            toggleHistoryBtn.classList.add('hidden'); // Hide toggle button
         }
         updateMenuVisibility();
     }
