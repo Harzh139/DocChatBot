@@ -253,7 +253,7 @@ def register():
             flash('Username or email already exists', 'error')
         finally:
             db.close()
-    return render_template('register.html')
+    return render_template('home')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -282,7 +282,7 @@ def login():
             if request.is_json:
                 return jsonify({"error": "Invalid username/email or password"}), 401
             flash('Invalid username/email or password', 'error')
-    return render_template('login.html')
+    return render_template('home')
 
 @app.route('/logout', methods=['POST'])
 @login_required_json
