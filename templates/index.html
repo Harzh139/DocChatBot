@@ -758,7 +758,7 @@
 </head>
 <body>
 <div id="app-content" class="app-content hidden">
-    <div class="main-container">
+    <div class="main-container" id="main-container">
         <!-- Left Panel: Upload & History -->
         <div class="side-panel" id="side-panel">
             <div id="upload-area">
@@ -773,6 +773,10 @@
                 <ul id="history-list"></ul>
             </div>
         </div>
+        <!-- Toggle History Button -->
+        <button id="toggle-history" class="toggle-history-btn hidden" title="Show/Hide History">
+            <i class="fas fa-chevron-left"></i>
+        </button>
         <!-- Right Panel: Chat -->
         <div class="chat-panel">
             <h1 class="bot-title">
@@ -1050,6 +1054,12 @@
             sidePanel.classList.toggle('collapsed');
             mainContainer.classList.toggle('history-collapsed');
             toggleHistoryBtn.classList.toggle('collapsed');
+            // Move the button with the panel
+            if (sidePanel.classList.contains('collapsed')) {
+                toggleHistoryBtn.style.left = '10px';
+            } else {
+                toggleHistoryBtn.style.left = '320px';
+            }
             // Change chevron direction
             const icon = toggleHistoryBtn.querySelector('i');
             if (sidePanel.classList.contains('collapsed')) {
