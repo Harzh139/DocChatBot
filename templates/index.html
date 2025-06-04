@@ -25,7 +25,8 @@
         .auth-container {
             width: 100%;
             max-width: 400px;
-            background: rgba(255, 255, 255, 0.9);
+            background: #f7faff;
+            border: 2px solid #b3d8ff;
             border-radius: 15px;
             padding: 30px;
             margin-bottom: 30px;
@@ -144,14 +145,14 @@
         }
         
         #upload-area {
-            background: rgba(255, 255, 255, 0.6);
-            border: 2px dashed #aaa;
+            background: #fff;
+            border: 2px solid #b3d8ff;
             border-radius: 15px;
             padding: 30px;
             width: 100%;
             max-width: 600px;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 40px;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
@@ -195,7 +196,8 @@
         }
 
         #chatbox {
-            background: rgba(255,255,255,0.8);
+            border: 2px solid #b3d8ff;
+            background: #fafdff;
             width: 100%;
             max-width: 600px;
             height: 400px;
@@ -626,9 +628,10 @@
         }
 
         .side-panel {
-            width: 320px;
             background: #f8f9fa;
-            border-right: 1px solid #e0e0e0;
+            border-right: 2px solid #d0e2ff;
+            box-shadow: 2px 0 8px rgba(0,123,255,0.04);
+            width: 320px;
             padding: 30px 15px 15px 15px;
             display: flex;
             flex-direction: column;
@@ -637,7 +640,9 @@
         }
 
         #upload-area {
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            border: 2px solid #b3d8ff;
+            background: #fff;
         }
 
         #history-panel {
@@ -673,6 +678,10 @@
         }
 
         .chat-panel {
+            background: linear-gradient(135deg, #e8f7ff 80%, #f6f6ff 100%);
+            border-radius: 0 18px 18px 0;
+            box-shadow: 0 2px 16px rgba(0,123,255,0.07);
+            margin: 30px 0;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -716,38 +725,40 @@
     </style>
 </head>
 <body>
-<div class="main-container">
-    <!-- Left Panel: Upload & History -->
-    <div class="side-panel">
-        <div id="upload-area">
-            <label for="file-input" class="upload-btn">
-                <i class="fas fa-upload"></i> Choose Document
-            </label>
-            <p id="status">Supports PDF, DOCX, TXT, CSV, XLSX files</p>
-            <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv,.xlsx">
+<div id="app-content" class="app-content hidden">
+    <div class="main-container">
+        <!-- Left Panel: Upload & History -->
+        <div class="side-panel">
+            <div id="upload-area">
+                <label for="file-input" class="upload-btn">
+                    <i class="fas fa-upload"></i> Choose Document
+                </label>
+                <p id="status">Supports PDF, DOCX, TXT, CSV, XLSX files</p>
+                <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv,.xlsx">
+            </div>
+            <div id="history-panel">
+                <h3>Chat History</h3>
+                <ul id="history-list"></ul>
+            </div>
         </div>
-        <div id="history-panel">
-            <h3>Chat History</h3>
-            <ul id="history-list"></ul>
-        </div>
-    </div>
-    <!-- Right Panel: Chat -->
-    <div class="chat-panel">
-        <h1 class="bot-title">
-            <span class="logo-icon">📚</span>
-            <span class="main-name">Docu</span><span class="accent-name">Mentor</span>
-            <span class="tagline">Your Smart Document & Data Assistant</span>
-        </h1>
-        <div id="chatbox"></div>
-        <div id="input-area">
-            <input type="text" id="question-input" placeholder="Ask something about the document..." disabled>
-            <button id="ask-btn" disabled>
-                <i class="fas fa-paper-plane"></i> Ask
-            </button>
-        </div>
-        <div class="checkbox-container">
-            <input type="checkbox" id="use-context" checked>
-            <label for="use-context">Use document context</label>
+        <!-- Right Panel: Chat -->
+        <div class="chat-panel">
+            <h1 class="bot-title">
+                <span class="logo-icon">📚</span>
+                <span class="main-name">Docu</span><span class="accent-name">Mentor</span>
+                <span class="tagline">Your Smart Document & Data Assistant</span>
+            </h1>
+            <div id="chatbox"></div>
+            <div id="input-area">
+                <input type="text" id="question-input" placeholder="Ask something about the document..." disabled>
+                <button id="ask-btn" disabled>
+                    <i class="fas fa-paper-plane"></i> Ask
+                </button>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="use-context" checked>
+                <label for="use-context">Use document context</label>
+            </div>
         </div>
     </div>
 </div>
