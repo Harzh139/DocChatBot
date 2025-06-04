@@ -449,10 +449,7 @@ def ask_question():
                 messages=messages,
                 max_tokens=1500
             )
-            # Accept only if not in fallback triggers AND long enough
-            if (response and 
-                response.strip().lower() not in fallback_triggers and 
-                len(response.strip()) >= 30):
+            if (response and not is_fallback_response(response) and len(response.strip()) >= 30):
                 answer_found = response
                 break
 
@@ -700,6 +697,25 @@ def internal_error(error):
     if request.path.startswith('/api') or request.path.startswith('/upload') or request.path.startswith('/ask'):
         return jsonify({"error": "Internal server error"}), 500
     return render_template('500.html'), 500
+
+def is_fallback_response(resp):
+    if not resp or not resp.strip():
+        return True
+    resp_l = resp.strip().lower()
+    triggers = [
+        "i don't know",
+        "not found in the document",
+        "the document does not contain any information",
+        "no information about",
+        "not available in the document",
+        "not present in the document",
+        "does not mention",
+        "is not mentioned in the document"
+    ]
+    for trig in triggers:
+        if trig in resp_l:
+            return True
+    return False
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

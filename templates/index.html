@@ -866,6 +866,12 @@
     <i class="fas fa-chevron-left"></i>
 </button>
 
+<div id="link-area">
+    <input type="text" id="link-input" placeholder="Paste article URL here..." />
+    <button id="link-upload-btn" class="upload-btn" style="margin-top:8px;">Analyze Link</button>
+    <div id="link-status"></div>
+</div>
+
 <script>
     // DOM Elements
     const fileInput = document.getElementById('file-input');
@@ -1296,11 +1302,10 @@
     // Drag and drop functionality already handled above
 
     // Link upload (if you have a link upload area)
-    // Uncomment and implement if needed
-    /*
     const linkInput = document.getElementById('link-input');
     const linkUploadBtn = document.getElementById('link-upload-btn');
     const linkStatus = document.getElementById('link-status');
+
     linkUploadBtn.addEventListener('click', async () => {
         const url = linkInput.value.trim();
         if (!url) {
@@ -1333,7 +1338,6 @@
             linkStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${error.message}`;
         }
     });
-    */
 </script>
 </body>
 </html>
