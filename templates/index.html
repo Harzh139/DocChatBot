@@ -1102,6 +1102,8 @@
             appContent.classList.remove('hidden');
             userInfoBar.classList.remove('hidden');
             usernameDisplay.textContent = currentUsername;
+            // Clear chatbox on every login
+            chatbox.innerHTML = '';
             loadChatHistoryList();
             toggleHistoryBtn.classList.remove('hidden'); // Show toggle button
         } else {
