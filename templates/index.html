@@ -767,6 +767,12 @@
                 </label>
                 <p id="status">Supports PDF, DOCX, TXT, CSV, XLSX files</p>
                 <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv,.xlsx">
+                <!-- Link upload area moved here and hidden by default -->
+                <div id="link-area" style="margin-top:18px;">
+                    <input type="text" id="link-input" placeholder="Paste article URL here..." />
+                    <button id="link-upload-btn" class="upload-btn" style="margin-top:8px;">Analyze Link</button>
+                    <div id="link-status"></div>
+                </div>
             </div>
             <div id="history-panel">
                 <h3>Chat History</h3>
@@ -1103,6 +1109,7 @@
     // Update UI after authentication changes
     function updateUIAfterAuth() {
         const toggleHistoryBtn = document.getElementById('toggle-history');
+        const linkArea = document.getElementById('link-area');
         if (currentUsername) {
             authContainer.classList.add('hidden');
             appContent.classList.remove('hidden');
@@ -1112,6 +1119,7 @@
             chatbox.innerHTML = '';
             loadChatHistoryList();
             toggleHistoryBtn.classList.remove('hidden'); // Show toggle button
+            linkArea.style.display = 'block'; // Show link area
         } else {
             authContainer.classList.remove('hidden');
             appContent.classList.add('hidden');
@@ -1124,6 +1132,7 @@
             document.getElementById('login-form').classList.remove('hidden');
             document.getElementById('register-form').classList.add('hidden');
             toggleHistoryBtn.classList.add('hidden'); // Hide toggle button
+            linkArea.style.display = 'none'; // Hide link area
         }
         updateMenuVisibility();
     }
