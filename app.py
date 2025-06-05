@@ -643,6 +643,23 @@ def clear_chat_history():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/chat/delete_one', methods=['POST'])
+@login_required_json
+def delete_one_history():
+    try:
+        data = request.get_json()
+        chat_id = data.get('id')
+        db = get_db()
+        db.execute(
+            'DELETE FROM chat_history WHERE user_id = ? AND id = ?',
+            (current_user.id, chat_id)
+        )
+        db.commit()
+        db.close()
+        return jsonify({"message": "Deleted"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/profile')
 @login_required
 def profile():

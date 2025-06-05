@@ -754,6 +754,25 @@
         .main-container.history-collapsed .chat-panel {
             border-radius: 18px;
         }
+        .edit-question-btn, .delete-history-btn {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 1em;
+        }
+        .edit-question-btn:hover, .delete-history-btn:hover {
+            color: #dc3545;
+        }
+        #delete-all-history-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1em;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -775,7 +794,11 @@
                 </div>
             </div>
             <div id="history-panel">
-                <h3>Chat History</h3>
+                <h3>Chat History
+                    <button id="delete-all-history-btn" title="Delete All" style="float:right;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </h3>
                 <ul id="history-list"></ul>
             </div>
         </div>
@@ -795,6 +818,9 @@
                 <input type="text" id="question-input" placeholder="Ask something about the document..." disabled>
                 <button id="ask-btn" disabled>
                     <i class="fas fa-paper-plane"></i> Ask
+                </button>
+                <button id="pause-btn" title="Pause Bot" style="display:none;">
+                    <i class="fas fa-pause"></i>
                 </button>
             </div>
             <div class="checkbox-container">
@@ -882,6 +908,7 @@
     const chatbox = document.getElementById('chatbox');
     const questionInput = document.getElementById('question-input');
     const askBtn = document.getElementById('ask-btn');
+    const pauseBtn = document.getElementById('pause-btn');
     const useContextCheckbox = document.getElementById('use-context');
     // Auth elements
     const authContainer = document.getElementById('auth-container');
@@ -902,6 +929,8 @@
     let currentFile = null;
     let isBotTyping = false;
     let currentUsername = null;
+    let isPaused = false;
+    let currentTypingTimeout = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         checkAuth();
@@ -1078,6 +1107,12 @@
                 icon.classList.add('fa-chevron-left');
             }
         });
+        document.getElementById('delete-all-history-btn').onclick = async () => {
+            if (confirm('Delete all chat history?')) {
+                await fetch('/chat/clear', { method: 'POST', credentials: 'include' });
+                loadChatHistoryList();
+            }
+        };
     });
 
     // Check authentication status
@@ -1146,10 +1181,12 @@
     // Typing effect
     function typeResponse(element, text, delay = 20) {
         let i = 0;
-        let isInBullet = false;
+        isPaused = false;
+        document.getElementById('pause-btn').style.display = 'inline-block';
         function type() {
+            if (isPaused) return;
             if (i < text.length) {
-                if (text[i] === '\n' && !isInBullet) {
+                if (text[i] === '\n') {
                     element.innerHTML += '<br>';
                     i++;
                 } else if (text.substr(i, 2) === '🔹' || text.substr(i, 2) === '✅' || text.substr(i, 2) === '📌') {
@@ -1159,11 +1196,18 @@
                     element.innerHTML += text[i];
                     i++;
                 }
-                setTimeout(type, delay);
+                currentTypingTimeout = setTimeout(type, delay);
+            } else {
+                document.getElementById('pause-btn').style.display = 'none';
             }
         }
         type();
     }
+    document.getElementById('pause-btn').onclick = function() {
+        isPaused = true;
+        this.style.display = 'none';
+        if (currentTypingTimeout) clearTimeout(currentTypingTimeout);
+    };
 
     function createTypingIndicator() {
         const typing = document.createElement('div');
@@ -1178,24 +1222,21 @@
         return typing;
     }
 
-    function addMessage(text, sender) {
+    function addMessage(text, sender, originalIdx = null) {
         const msg = document.createElement('div');
         msg.className = `message ${sender}`;
-        chatbox.appendChild(msg);
-
-        if (sender === 'bot') {
-            isBotTyping = true;
-            const typingIndicator = createTypingIndicator();
-            setTimeout(() => {
-                chatbox.removeChild(typingIndicator);
-                isBotTyping = false;
-                typeResponse(msg, text);
-                chatbox.scrollTop = chatbox.scrollHeight;
-            }, 500);
+        if (sender === 'user') {
+            msg.innerHTML = `<span class="msg-text">${text}</span>
+                <button class="edit-question-btn" title="Edit"><i class="fas fa-edit"></i></button>`;
+            msg.querySelector('.edit-question-btn').onclick = function() {
+                questionInput.value = text;
+                questionInput.focus();
+            };
         } else {
             msg.textContent = text;
-            chatbox.scrollTop = chatbox.scrollHeight;
         }
+        chatbox.appendChild(msg);
+        chatbox.scrollTop = chatbox.scrollHeight;
     }
 
     async function handleFileUpload() {
@@ -1279,14 +1320,28 @@
             if (data.chats && data.chats.length > 0) {
                 data.chats.forEach((chat, idx) => {
                     const li = document.createElement('li');
-                    li.textContent = chat.question.slice(0, 40) + (chat.question.length > 40 ? '...' : '');
+                    li.innerHTML = `
+                        <span class="history-question">${chat.question.slice(0, 40) + (chat.question.length > 40 ? '...' : '')}</span>
+                        <button class="delete-history-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                    `;
                     li.title = chat.question;
-                    li.onclick = () => {
+                    li.onclick = (e) => {
+                        if (e.target.closest('.delete-history-btn')) return;
                         chatbox.innerHTML = '';
                         addMessage(chat.question, 'user');
                         addMessage(chat.answer, 'bot');
                         document.querySelectorAll('#history-list li').forEach(el => el.classList.remove('active'));
                         li.classList.add('active');
+                    };
+                    li.querySelector('.delete-history-btn').onclick = async (e) => {
+                        e.stopPropagation();
+                        await fetch('/chat/delete_one', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ id: chat.id })
+                        });
+                        loadChatHistoryList();
                     };
                     historyList.appendChild(li);
                 });
