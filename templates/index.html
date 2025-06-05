@@ -773,6 +773,75 @@
             font-size: 1em;
             margin-left: 10px;
         }
+
+        #pause-btn.pause-animated {
+            position: relative;
+            background: linear-gradient(90deg, #ff5858 0%, #f09819 100%);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 28px 12px 18px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(255,88,88,0.18);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            outline: none;
+        }
+
+        #pause-btn.pause-animated:hover {
+            background: linear-gradient(90deg, #f09819 0%, #ff5858 100%);
+            box-shadow: 0 6px 24px rgba(255,88,88,0.25);
+            transform: scale(1.05);
+        }
+
+        #pause-btn .pause-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff3;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 1.2em;
+            animation: pause-pulse 1.2s infinite;
+        }
+
+        #pause-btn .pause-text {
+            letter-spacing: 1px;
+            font-size: 1em;
+            font-weight: 500;
+        }
+
+        #pause-btn .pause-ripple {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 120%;
+            height: 120%;
+            background: radial-gradient(circle, #ff5858 0%, transparent 70%);
+            opacity: 0.15;
+            transform: translate(-50%, -50%) scale(0.8);
+            pointer-events: none;
+            animation: pause-ripple 1.5s infinite;
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        @keyframes pause-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 #ff585855; }
+            50% { box-shadow: 0 0 0 10px #ff585822; }
+        }
+
+        @keyframes pause-ripple {
+            0% { opacity: 0.18; transform: translate(-50%, -50%) scale(0.8);}
+            70% { opacity: 0.10; transform: translate(-50%, -50%) scale(1.2);}
+            100% { opacity: 0.18; transform: translate(-50%, -50%) scale(0.8);}
+        }
     </style>
 </head>
 <body>
@@ -819,8 +888,12 @@
                 <button id="ask-btn" disabled>
                     <i class="fas fa-paper-plane"></i> Ask
                 </button>
-                <button id="pause-btn" title="Pause Bot" style="display:none;">
-                    <i class="fas fa-pause"></i>
+                <button id="pause-btn" title="Pause Bot" class="pause-animated" style="display:none;">
+                    <span class="pause-icon">
+                        <i class="fas fa-pause"></i>
+                    </span>
+                    <span class="pause-text">Pause</span>
+                    <span class="pause-ripple"></span>
                 </button>
             </div>
             <div class="checkbox-container">
